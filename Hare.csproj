@@ -61,7 +61,6 @@
   <ItemGroup>
     <Compile Include="AABB_Main.cs" />
     <Compile Include="AABB_Tri_Int.cs" />
-    <Compile Include="Octree.cs" />
     <Compile Include="Voxel_Grid.cs" />
     <Compile Include="Hare_Geometry_Math.cs" />
     <Compile Include="Hare_Geometry_Polygons.cs" />
