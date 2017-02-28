@@ -184,6 +184,24 @@ namespace Hare
                 pos = 1000000 * zpos + 1000 * xpos + ypos;
             }
         }
+
+        public class Vertex: Point
+        {
+            public int index;
+            
+            public Vertex(Point p, int id)
+                :base(p.x, p.y, p.z)
+            {
+                index = id;
+            }
+
+            public Vertex(double x, double y, double z, int id)
+                :base(x, y, z)
+            {
+                index = id;
+            }
+        }
+        
         /// <summary>
         /// A ray class storing all relevant data to accurately cast a ray.
         /// </summary>
@@ -203,6 +221,7 @@ namespace Hare
             public int a;
             public int Ray_ID;
         }
+
 
         /// <summary>
         /// A structure containing all data about the intersection resulting from a "shoot" operation in a spatial partition class.

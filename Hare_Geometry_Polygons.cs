@@ -28,7 +28,7 @@ namespace Hare
         {
             //protected internal 
             public Vector Normal;
-            protected internal Point[] Points;
+            public Vertex[] Points;
             protected internal int VertexCount;
             protected double d;
             protected internal bool IsDegenerate = false;
@@ -94,13 +94,13 @@ namespace Hare
             //    IsConvex = Convexity();
             //}
 
-            public Polygon(ref List<Point> Vertices, int index, int id, int Plane_ID)
+            public Polygon(ref List<Vertex> Vertices, int index, int id, int Plane_ID)
             :this(ref Vertices, index, id)
             {
                 Plane_index = Plane_ID;
             }
 
-            public Polygon(ref List<Point> Vertices, int index, int id)
+            public Polygon(ref List<Vertex> Vertices, int index, int id)
             {
                 top_index = index;
 
@@ -110,7 +110,7 @@ namespace Hare
                     if (!Normal.IsZeroVector()) break;
                 }
 
-                Points = new Point[Vertices.Count];
+                Points = new Vertex[Vertices.Count];
                 for (int p = 0; p < Vertices.Count; p++)
                 {
                     Points[p] = Vertices[p];
@@ -411,13 +411,13 @@ namespace Hare
         /// </summary>
         public class Triangle : Polygon
         {
-            public Triangle(ref List<Point> Vertices, int index, int id, int PlaneID)
+            public Triangle(ref List<Vertex> Vertices, int index, int id, int PlaneID)
                 : base(ref Vertices, index, id, PlaneID)
             {
                 if (VertexCount != 3) throw new ApplicationException("Faulty Triangle");
             }
             
-            public Triangle(ref List<Point> Vertices, int index, int id)
+            public Triangle(ref List<Vertex> Vertices, int index, int id)
                 : base(ref Vertices, index, id)
             {
                 if (VertexCount != 3) throw new ApplicationException("Faulty Triangle");
@@ -472,13 +472,13 @@ namespace Hare
         {
             private double[] area_Fraction = new double[2];
 
-            public Quadrilateral(ref List<Point> Vertices, int index, int id, int PlaneID)
+            public Quadrilateral(ref List<Vertex> Vertices, int index, int id, int PlaneID)
                 : base(ref Vertices, index, id, PlaneID)
             {
                 if (VertexCount != 3) throw new ApplicationException("Faulty Triangle");
             }
 
-            public Quadrilateral(ref List<Point> Vertices, int index, int id)
+            public Quadrilateral(ref List<Vertex> Vertices, int index, int id)
                 : base(ref Vertices, index, id)
             {
                 if (VertexCount != 4) throw new ApplicationException("Faulty Quadrilateral");
@@ -575,7 +575,7 @@ namespace Hare
         /// </summary>
         public class Arb_Poly : Polygon
         {
-            public Arb_Poly(ref List<Point> Vertices, int[] Ps, int index, int id) : base(ref Vertices, index, id) { }
+            public Arb_Poly(ref List<Vertex> Vertices, int[] Ps, int index, int id) : base(ref Vertices, index, id) { }
 
             public override bool Intersect(Ray R, Point[] P, out Point Xpt, out double u, out double v, out double t, out int polyid)
             {

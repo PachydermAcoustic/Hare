@@ -30,9 +30,9 @@ namespace Hare
             /// <summary>
             /// A list of vertices.
             /// </summary>
-            private System.Collections.Generic.SortedDictionary<ulong, System.Collections.Generic.SortedDictionary<ulong, Point>> Vertices;
+            private System.Collections.Generic.SortedDictionary<ulong, System.Collections.Generic.SortedDictionary<ulong, Vertex>> Vertices;
 
-            private List<Point> Vertices_List = new List<Point>();
+            private List<Vertex> Vertices_List = new List<Vertex>();
 
             /// <summary>
             /// A list of polygons.
@@ -49,7 +49,7 @@ namespace Hare
             /// <summary>
             /// A list of planes and their polygons.
             /// </summary>
-            public List<int>[] Plane_Members = new List<int>[0];
+            public List<List<int>> Plane_Members = new List<List<int>>();
             /// <summary>
             /// The max point of the topology bounding  box.
             /// </summary>
@@ -57,24 +57,26 @@ namespace Hare
             /// <summary>
             /// The number of significant digits to which all points are rounded.
             /// </summary>
+            public Vector[] Vertex_Normals;
+
             public int Prec;
             public MS_AABB Modspace;
 
             /// <summary>
             /// A simple constructor which initializes the topology at maximum precision.
             /// </summary>
-            private Topology() : this(15) { }
+            public Topology() : this(15) { }
 
             /// <summary>
             /// A simple constructor which allows the user to choose the precision.
             /// </summary>
             /// <param name="Precision">The number of significant digits the vertices will be rounded to.</param>
-            private Topology(int Precision)
+            public Topology(int Precision)
             {
                 //Vertices = new List<Point>();
                 Max = new Point(double.MinValue, double.MinValue, double.MinValue);
                 Min = new Point(double.MaxValue, double.MaxValue, double.MaxValue);
-                Vertices = new SortedDictionary<ulong, SortedDictionary<ulong, Point>>();
+                Vertices = new SortedDictionary<ulong, SortedDictionary<ulong, Vertex>>();
                 Prec = Precision;
             }
 
@@ -140,66 +142,16 @@ namespace Hare
             /// <summary>
             /// Finalizes the topology by updating the axis-aligned bounding box of the model.
             /// </summary>
-            public void Finish_Topology()
-            {
-                //double Minx;
-                //double Miny;
-                //double Minz;
-                //double Maxx;
-                //double Maxy;
-                //double Maxz;
-                //Minx = double.MaxValue;
-                //Miny = double.MaxValue;
-                //Minz = double.MaxValue;
-
-                //Maxx = double.MinValue;
-                //Maxy = double.MinValue;
-                //Maxz = double.MinValue;
-
-                //foreach (Point p in Vertices)
-                //{
-                //    if (p.x < Minx) Minx = p.x;
-                //    if (p.y < Miny) Miny = p.y;
-                //    if (p.z < Minz) Minz = p.z;
-
-                //    if (p.x > Maxx) Maxx = p.x;
-                //    if (p.y > Maxy) Maxy = p.y;
-                //    if (p.z > Maxz) Maxz = p.z;
-                //}
-                //Min = new Point(Minx, Miny, Minz);
-                //Max = new Point(Maxx, Maxy, Maxz);
-            }
-
-            /// <summary>
-            /// Finalizes the topology by updating the axis-aligned bounding box of the model.
-            /// </summary>
             /// <param name="EXPTS">A list of points which are not part of the model but need to be included in the axis-aligned bounding box.</param>
             public void Finish_Topology(List<Point> EXPTS)
             {
+                ///Find bounds of the model...
                 double Minx = Modspace.Min.x;
                 double Miny = Modspace.Min.y;
                 double Minz = Modspace.Min.z;
                 double Maxx = Modspace.Max.x;
                 double Maxy = Modspace.Max.y;
                 double Maxz = Modspace.Max.z;
-
-                //Minx = double.MaxValue;
-                //Miny = double.MaxValue;
-                //Minz = double.MaxValue;
-                //Maxx = double.MinValue;
-                //Maxy = double.MinValue;
-                //Maxz = double.MinValue;
-
-                //for (int i = 0; i < Vertices.Count; i++) for (int j = 0; j < Vertices[i].Count; j++) foreach (Point p in Vertices[i][j])
-                //{
-                //    if (p.x < Minx) Minx = p.x;
-                //    if (p.y < Miny) Miny = p.y;
-                //    if (p.z < Minz) Minz = p.z;
-
-                //    if (p.x > Maxx) Maxx = p.x;
-                //    if (p.y > Maxy) Maxy = p.y;
-                //    if (p.z > Maxz) Maxz = p.z;
-                //}
 
                 foreach (Point p in EXPTS)
                 {
@@ -214,44 +166,56 @@ namespace Hare
 
                 Min = new Point(Minx, Miny, Minz);
                 Max = new Point(Maxx, Maxy, Maxz);
+
+                ///Set up vertex normals...
+                Vertex_Normals = new Vector[Vertices_List.Count];
+                for (int i = 0; i < Vertices_List.Count; i++) Vertex_Normals[i] = new Vector();
+
+                foreach(Polygon pol in Polys)
+                {                    
+                    foreach (Vertex pt in pol.Points) Vertex_Normals[pt.index] += pol.Normal;
+                }
+
+                for (int i = 0; i < Vertex_Normals.Length; i++) Vertex_Normals[i].Normalize();
             }
 
-            public void Add_Polygon(Point[] P, int Plane_ID)
-            {
-                List<Point> VertexList = new List<Point>(P.Length);
+            //public void Add_Polygon(Point[] P, int Plane_ID)
+            //{
+            //    List<Vertex> VertexList = new List<Vertex>(P.Length);
 
-                if (Plane_ID > Plane_Members.Length-1)
-                {
-                    Array.Resize<List<int>>(ref Plane_Members, Plane_ID+1);
-                    for (int i = 0; i < Plane_ID+1; i++)
-                    {
-                        if (Plane_Members[Plane_ID] == null) Plane_Members[Plane_ID] = new List<int>();
-                    }
-                }
+            //    if (Plane_ID > Plane_Members.Length-1)
+            //    {
+            //        Array.Resize<List<int>>(ref Plane_Members, Plane_ID+1);
+            //        for (int i = 0; i < Plane_ID+1; i++)
+            //        {
+            //            if (Plane_Members[Plane_ID] == null) Plane_Members[Plane_ID] = new List<int>();
+            //        }
+            //    }
 
-                Plane_Members[Plane_ID].Add(Polys.Count);
+            //    Plane_Members[Plane_ID].Add(Polys.Count);
 
-                for (int p = 0; p < P.Length; p++)
-                {
-                    VertexList.Add(this.AddGetIndex(P[p]));
-                }
+            //    for (int p = 0; p < P.Length; p++)
+            //    {
+            //        Vertex pt;
+            //        this.AddGetIndex(P[p], out pt);
+            //        VertexList.Add(pt);
+            //    }
 
-                //Array.Resize(ref Polys, Polys.Length + 1);
-                if (P.Length == 4)
-                {
-                    lock (Top_Lock) Polys.Add(new Quadrilateral(ref VertexList, 0, Polys.Count - 1, Plane_ID));
-                    //Polys[Polys.Count - 1] = new Quadrilateral(ref Vertices, VertexList, 0, Polys.Length - 1);
-                }
-                else if (P.Length == 3)
-                {
-                    lock (Top_Lock) Polys.Add(new Triangle(ref VertexList, 0, Polys.Count - 1, Plane_ID));
-                    //Polys[Polys.Count - 1] = new Triangle(ref Vertices, VertexList, 0, Polys.Length - 1);
-                }
-                else
-                {
-                    throw new NotImplementedException("Hare Does not yet support polygons of more than 4 sides.");
-                }
-            }
+            //    if (P.Length == 4)
+            //    {
+            //        lock (Top_Lock) Polys.Add(new Quadrilateral(ref VertexList, 0, Polys.Count - 1, Plane_ID));
+            //        //Polys[Polys.Count - 1] = new Quadrilateral(ref Vertices, VertexList, 0, Polys.Length - 1);
+            //    }
+            //    else if (P.Length == 3)
+            //    {
+            //        lock (Top_Lock) Polys.Add(new Triangle(ref VertexList, 0, Polys.Count - 1, Plane_ID));
+            //        //Polys[Polys.Count - 1] = new Triangle(ref Vertices, VertexList, 0, Polys.Length - 1);
+            //    }
+            //    else
+            //    {
+            //        throw new NotImplementedException("Hare Does not yet support polygons of more than 4 sides.");
+            //    }
+            //}
 
             /// <summary>
             /// Adds a polygon to the topology. Can be used immediately after initializing the topology.
@@ -259,41 +223,40 @@ namespace Hare
             /// <param name="P">An array of Points which make up the vertices of the polygon.</param>
             public void Add_Polygon(Point[] P)
             {
-                List<Point> VertexList = new List<Point>(P.Length);
+                List<Vertex> VertexList = new List<Vertex>(P.Length);
 
                 for (int p = 0; p < P.Length; p++)
                 {
-                    VertexList.Add(this.AddGetIndex(P[p]));
+                    Vertex pt;
+                    this.AddGetIndex(P[p], out pt);
+                    VertexList.Add(pt);
                 }
 
-                //Array.Resize(ref Polys, Polys.Length + 1);
                 if (P.Length == 4)
                 {
                     lock (Top_Lock) Polys.Add(new Quadrilateral(ref VertexList, 0, Polys.Count));
-                    //Polys[Polys.Count - 1] = new Quadrilateral(ref Vertices, VertexList, 0, Polys.Length - 1);
                 }
                 else if (P.Length == 3)
                 {
-                    lock(Top_Lock) Polys.Add(new Triangle(ref VertexList, 0, Polys.Count));
-                    //Polys[Polys.Count - 1] = new Triangle(ref Vertices, VertexList, 0, Polys.Length - 1);
+                    lock (Top_Lock) Polys.Add(new Triangle(ref VertexList, 0, Polys.Count));
                 }
                 else
                 {
                     throw new NotImplementedException("Hare Does not yet support polygons of more than 4 sides.");
                 }
 
-                plane p1 = new plane(Polys[Polys.Count-1]);
-                for(int i = 0; i < planeList.Count; i++) if (p1.GetHashCode() == planeList[i].GetHashCode())
-                {
-                    Polys[Polys.Count - 1].Plane_ID = i;
-                    Plane_Members[i].Add(Polys.Count - 1);
-                    return;
-                }
-                planeList.Add(p1);
-                Array.Resize<List<int>>(ref Plane_Members, Plane_Members.Length+1);
-                Plane_Members[Plane_Members.Length-1] = new List<int>();
-                Plane_Members[Plane_Members.Length-1].Add(Polys.Count-1);
-                Polys[Polys.Count - 1].Plane_ID = planeList.Count-1;
+                //plane p1 = new plane(Polys[Polys.Count - 1]);
+                //for (int i = 0; i < planeList.Count; i++) if (p1.GetHashCode() == planeList[i].GetHashCode())
+                //    {
+                //        Polys[Polys.Count - 1].Plane_ID = i;
+                //        Plane_Members[i].Add(Polys.Count - 1);
+                //        return;
+                //    }
+                //planeList.Add(p1);
+                //Array.Resize<List<int>>(ref Plane_Members, Plane_Members.Length + 1);
+                //Plane_Members[Plane_Members.Length - 1] = new List<int>();
+                //Plane_Members[Plane_Members.Length - 1].Add(Polys.Count - 1);
+                //Polys[Polys.Count - 1].Plane_ID = planeList.Count - 1;
             }
 
             Object Top_Lock = new Object();
@@ -303,16 +266,18 @@ namespace Hare
                 Min = new Point(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
                 Max = new Point(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
 
-                Vertices = new SortedDictionary<ulong,SortedDictionary<ulong,Point>>();
+                Vertices = new SortedDictionary<ulong,SortedDictionary<ulong,Vertex>>();
                 Polys = new List<Polygon>(T.Length);
 
-                //for (int i = 0; i < T.Length; i++)
-                System.Threading.Tasks.Parallel.For(0, T.Length, i => 
+                for (int i = 0; i < T.Length; i++)
+                //System.Threading.Tasks.Parallel.For(0, T.Length, i => 
                 {
-                    List<Point> VertexList = new List<Point>();
+                    List<Vertex> VertexList = new List<Vertex>();
                     for (int p = 0; p < T[i].Length; p++)
                     {
-                        VertexList.Add(this.AddGetIndex(T[i][p]));
+                        Vertex pt;
+                        this.AddGetIndex(T[i][p], out pt);
+                        VertexList.Add(pt);
                     }
 
                     if (VertexList.Count == 4)
@@ -327,46 +292,42 @@ namespace Hare
                     {
                             throw new NotImplementedException("Hare Does not yet support polygons of more than 4 sides.");
                     }
-                });
+                }//);
+
+                for (int i = 0; i < Polys.Count; i++)
+                {
+                    plane p1 = new plane(Polys[i]);
+                    bool foundit = false;
+
+                    for (int j = 0; j < planeList.Count; j++)
+                    {
+                        if (p1.GetHashCode() == planeList[j].GetHashCode())
+                        {
+                            Polys[i].Plane_ID = j;
+                            Plane_Members[j].Add(i);
+                            foundit = true;
+                        }
+                    }
+                    if (!foundit)
+                    {
+                        planeList.Add(p1);
+                        Plane_Members.Add(new List<int>());
+                        //Array.Resize<List<int>>(ref Plane_Members, Plane_Members.Length + 1);
+                        //Plane_Members[Plane_Members.Length - 1] = new List<int>();
+                        Plane_Members[Plane_Members.Count - 1].Add(i);
+                        Polys[i].Plane_ID = planeList.Count - 1;
+                    }
+                }
             }
 
-            /// <summary>
-            /// Checks to see if the topology has a given point. If it does, it returns the index of the point. If not, it adds it and returns the index of the new point.
-            /// </summary>
-            /// <param name="x">The point to be found or added.</param>
-            /// <returns>The index of the point.</returns>
-            //private int AddGetIndex(Point x)
-            //{
-            //    x.Round(Prec);
-            //    try
-            //    {
-            //        for (int q = 0; q < Vertices.Length; q++)
-            //        {
-            //            if (Vertices[q].x == x.x && Vertices[q].y == x.y && Vertices[q].z == x.z)
-            //            {
-            //                return q;
-            //            }
-            //        }
-            //        Array.Resize(ref Vertices, Vertices.Length + 1);
-            //        Vertices[Vertices.Length - 1] = x;
-            //        return Vertices.Length - 1;
-            //    }
-            //    catch (NullReferenceException)
-            //    {
-            //        Vertices[0] = x;
-            //        return 0;
-            //    }
-            //}
-
-            private Point AddGetIndex(Point x)
+            private void AddGetIndex(Point x, out Vertex x_out)
             {
                 //Identify which grid point the point is located in...
-
                 x.Round(Prec);
                 lock (Top_Lock)
                 {
-                    SortedDictionary<ulong, Point> D;
-                    Point p;
+                    SortedDictionary<ulong, Vertex> D;
+                    Vertex p;
                     ulong Hash_1, Hash_2;
                     x.Hash2(this.Modspace, out Hash_1, out Hash_2);
 
@@ -374,20 +335,24 @@ namespace Hare
                     {
                         if (D.TryGetValue(Hash_2, out p))
                         {
-                            return p;//Vertices[q];
+                            x_out = p;//Vertices[q];
                         }
                         else
                         {
-                            D.Add(Hash_2, x);
-                            Vertices_List.Add(x);
+                            Vertex xpt = new Vertex(x, Vertices_List.Count);
+                            Vertices_List.Add(xpt);
+                            D.Add(Hash_2, xpt);
+                            x_out = xpt;
                         }
                     }
                     else 
                     {
-                        D = new SortedDictionary<ulong,Point>();
-                        D.Add(Hash_2, x);
+                        D = new SortedDictionary<ulong,Vertex>();
+                        Vertex xpt = new Vertex(x, Vertices_List.Count);
+                        Vertices_List.Add(xpt);
+                        D.Add(Hash_2, xpt);
+                        x_out = xpt;
                         Vertices.Add(Hash_1, D);
-                        Vertices_List.Add(x);
                     }
                 }
 
@@ -398,8 +363,6 @@ namespace Hare
                 //if (x.x > Max.x) Max.x = x.x;
                 //if (x.y > Max.y) Max.y = x.y;
                 //if (x.z > Max.z) Max.z = x.z;
-
-                return x;
             }
 
             /// <summary>
@@ -458,7 +421,6 @@ namespace Hare
                 return Polys[Poly_ID].Intersect(R, this.Polygon_Vertices(Poly_ID), out P, out u, out v, out t, out Poly_ID);
             }
 
-
             /// <summary>
             /// Gets the array of vertices that make up a polygon.
             /// </summary>
@@ -494,6 +456,18 @@ namespace Hare
                 {
                     return Vertices_List.Count;
                 }
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="i"></param>
+            /// <param name="v"></param>
+            public void Set_Vertex(int i, Point v)
+            {
+                Vertices_List[i].x = v.x;
+                Vertices_List[i].y = v.y;
+                Vertices_List[i].z = v.z;
             }
 
             /// <summary>
