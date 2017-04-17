@@ -408,6 +408,10 @@ namespace Hare
                     X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 0.001) / VoxelDims.x);
                     Y = (int)Math.Floor((R.origin.y - OBox.Min.y + R.direction.y * 0.001) / VoxelDims.y);
                     Z = (int)Math.Floor((R.origin.z - OBox.Min.z + R.direction.z * 0.001) / VoxelDims.z);
+
+                    X = Math.Max(0, X);
+                    Y = Math.Max(0, Y);
+                    Z = Math.Max(0, Z);
                 }
 
                 if (R.direction.x < 0)
