@@ -16,7 +16,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 
 namespace Hare
 {
@@ -83,8 +82,8 @@ namespace Hare
             public Topology(Point Minpt, Point Maxpt)
             :this()
             {
-                this.Max = Maxpt;
-                this.Min = Minpt;
+                this.Max = Maxpt - new Point(0.000000000001, 0.000000000001, 0.000000000001);
+                this.Min = Minpt + new Point(0.000000000001, 0.000000000001, 0.000000000001);
                 Modspace = new MS_AABB(Min, Max);
             }
 
@@ -104,8 +103,8 @@ namespace Hare
                         if (Maxz < p.z) Maxz = p.z;
                     }
 
-                Min = new Point(Minx, Miny, Minz);
-                Max = new Point(Maxx, Maxy, Maxz);
+                Min = new Point(Minx - 0.000000000001, Miny - 0.000000000001, Minz - 0.000000000001);
+                Max = new Point(Maxx + 0.000000000001, Maxy + 0.000000000001, Maxz + 0.000000000001);
                 Modspace = new MS_AABB(Min, Max);
 
                 Build_Topology(T);
@@ -132,8 +131,8 @@ namespace Hare
                         if (Maxz < p.z) Maxz = p.z;
                     }
 
-                Min = new Point(Minx, Miny, Minz);
-                Max = new Point(Maxx, Maxy, Maxz);
+                Min = new Point(Minx - 0.000000000001, Miny - 0.000000000001, Minz - 0.000000000001);
+                Max = new Point(Maxx + 0.000000000001, Maxy + 0.000000000001, Maxz + 0.000000000001);
                 Modspace = new MS_AABB(Min, Max);
 
                 Build_Topology(T);
@@ -164,8 +163,8 @@ namespace Hare
                     if (p.z > Maxz) Maxz = p.z;
                 }
 
-                Min = new Point(Minx, Miny, Minz);
-                Max = new Point(Maxx, Maxy, Maxz);
+                Min = new Point(Minx - 0.000000000001, Miny - 0.000000000001, Minz - 0.000000000001);
+                Max = new Point(Maxx + 0.000000000001, Maxy + 0.000000000001, Maxz + 0.000000000001);
 
                 ///Set up vertex normals...
                 Vertex_Normals = new Vector[Vertices_List.Count];

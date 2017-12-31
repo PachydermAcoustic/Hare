@@ -405,9 +405,9 @@ namespace Hare
                         Ret_Event = new X_Event();
                         return false;
                     }
-                    X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 0.001) / VoxelDims.x);
-                    Y = (int)Math.Floor((R.origin.y - OBox.Min.y + R.direction.y * 0.001) / VoxelDims.y);
-                    Z = (int)Math.Floor((R.origin.z - OBox.Min.z + R.direction.z * 0.001) / VoxelDims.z);
+                    X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 1E-12) / VoxelDims.x);
+                    Y = (int)Math.Floor((R.origin.y - OBox.Min.y + R.direction.y * 1E-12) / VoxelDims.y);
+                    Z = (int)Math.Floor((R.origin.z - OBox.Min.z + R.direction.z * 1E-12) / VoxelDims.z);
                 }
 
                 if (R.direction.x < 0)
