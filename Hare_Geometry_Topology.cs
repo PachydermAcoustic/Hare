@@ -142,6 +142,43 @@ namespace Hare
             /// Finalizes the topology by updating the axis-aligned bounding box of the model.
             /// </summary>
             /// <param name="EXPTS">A list of points which are not part of the model but need to be included in the axis-aligned bounding box.</param>
+            public void Finish_Topology()
+            {
+                double Minx = double.MaxValue, Miny = double.MaxValue, Minz = double.MaxValue;
+                double Maxx = double.MinValue, Maxy = double.MinValue, Maxz = double.MinValue;
+
+                ///Find bounds of the model...
+                foreach (Point p in Vertices_List)
+                    {
+                        if (Minx > p.x) Minx = p.x;
+                        if (Miny > p.y) Miny = p.y;
+                        if (Minz > p.z) Minz = p.z;
+                        if (Maxx < p.x) Maxx = p.x;
+                        if (Maxy < p.y) Maxy = p.y;
+                        if (Maxz < p.z) Maxz = p.z;
+                    }
+
+                Modspace = new MS_AABB(new Hare.Geometry.Point(Minx, Miny, Minz), new Hare.Geometry.Point(Maxx, Maxy, Maxz));
+                
+                Min = new Point(Minx - 0.000000000001, Miny - 0.000000000001, Minz - 0.000000000001);
+                Max = new Point(Maxx + 0.000000000001, Maxy + 0.000000000001, Maxz + 0.000000000001);
+
+                ///Set up vertex normals...
+                Vertex_Normals = new Vector[Vertices_List.Count];
+                for (int i = 0; i < Vertices_List.Count; i++) Vertex_Normals[i] = new Vector();
+
+                foreach (Polygon pol in Polys)
+                {
+                    foreach (Vertex pt in pol.Points) Vertex_Normals[pt.index] += pol.Normal;
+                }
+
+                for (int i = 0; i < Vertex_Normals.Length; i++) Vertex_Normals[i].Normalize();
+            }
+
+            /// <summary>
+            /// Finalizes the topology by updating the axis-aligned bounding box of the model.
+            /// </summary>
+            /// <param name="EXPTS">A list of points which are not part of the model but need to be included in the axis-aligned bounding box.</param>
             public void Finish_Topology(List<Point> EXPTS)
             {
                 ///Find bounds of the model...
@@ -464,9 +501,30 @@ namespace Hare
             /// <param name="v"></param>
             public void Set_Vertex(int i, Point v)
             {
-                Vertices_List[i].x = v.x;
-                Vertices_List[i].y = v.y;
-                Vertices_List[i].z = v.z;
+                    Vertices_List[i].x = v.x;
+                    Vertices_List[i].y = v.y;
+                    Vertices_List[i].z = v.z;
+            }
+
+            /// <summary>
+            /// Use this method if you would like to set a series of points and faces on the topology, with a known set of indices.
+            /// </summary>
+            /// <param name="v"></param>
+            /// <param name="Faces"></param>
+            public void Set_Topology(Point[] v, int[][] Faces)
+            {
+                List<Vertex> VX = new List<Vertex>();
+
+                for (int i = 0; i < v.Length; i++)
+                {
+                    VX.Add(new Vertex(v[i], i));
+                    Vertices_List.Add(VX[i]);
+                }
+                for (int i = 0; i < Faces.Length; i++)
+                {
+                    List<Vertex> Verts = new List<Vertex>(new Vertex[3] { VX[Faces[i][0]], VX[Faces[i][1]], VX[Faces[i][2]] });
+                    Polys.Add(new Triangle(ref Verts , i, i));
+                }
             }
 
             /// <summary>
