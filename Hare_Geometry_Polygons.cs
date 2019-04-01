@@ -458,11 +458,6 @@ namespace Hare
                 double v = vrand * tmp;
                 return Points[0] + u * (Points[1] - Points[0]) + v * (Points[2] - Points[0]);
             }
-
-            //public int GetVertexIndex(int id)
-            //{
-            //    return this.Poly_index[id];
-            //}
         }
 
         /// <summary>
