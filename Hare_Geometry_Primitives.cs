@@ -83,7 +83,7 @@ namespace Hare
         /// <summary>
         /// Simple point type variable, complete with certain common operators...
         /// </summary>
-        public class Point //: IDisposable
+        public class Point
         {
             public double x;
             public double y;
@@ -188,7 +188,8 @@ namespace Hare
         public class Vertex: Point
         {
             public int index;
-            
+            public System.Collections.Generic.List<Polygon> Polys = new System.Collections.Generic.List<Polygon>();
+
             public Vertex(Point p, int id)
                 :base(p.x, p.y, p.z)
             {
@@ -199,6 +200,46 @@ namespace Hare
                 :base(x, y, z)
             {
                 index = id;
+            }
+        }
+        
+        public class Edge
+        {
+            Vertex[] pts = new Vertex[2];
+            int code;
+                
+            public Edge (Vertex a, Vertex b)
+            {
+                pts[0] = a;
+                pts[1] = b;
+                code = Hash(a, b);
+            }
+
+            public static int Hash(Point a, Point b)
+            {
+                Point pt1, pt2;
+                if (a.x == b.x)
+                {
+                    if (a.y == b.y)
+                    {
+                        if (a.z == b.z) throw new Exception("Zero-length edge...");
+                        else if (a.z > b.z) { pt1 = a; pt2 = b; }
+                        else { pt2 = a; pt1 = b; }
+                    }
+                    else if (a.y > b.y) { pt1 = a; pt2 = b; }
+                    else { pt2 = a; pt1 = b; }
+                }
+                else if (a.x > b.x) { pt1 = a; pt2 = b; }
+                else { pt2 = a; pt1 = b; }
+
+                int hash = 17;
+                hash = hash * 23 + (int)(pt1.x * 100);
+                hash = hash * 23 + (int)(pt2.x * 100);
+                hash = hash * 23 + (int)(pt1.y * 100);
+                hash = hash * 23 + (int)(pt2.y * 100);
+                hash = hash * 23 + (int)(pt1.z * 100);
+                hash = hash * 23 + (int)(pt2.z * 100);
+                return hash;
             }
         }
         

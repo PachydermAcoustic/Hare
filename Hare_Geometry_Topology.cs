@@ -32,6 +32,9 @@ namespace Hare
             private System.Collections.Generic.SortedDictionary<ulong, System.Collections.Generic.SortedDictionary<ulong, Vertex>> Vertices;
 
             private List<Vertex> Vertices_List = new List<Vertex>();
+            private List<List<Polygon>> Vertex_Polys = new List<List<Polygon>>();
+            //private List<Vertex[]> Edges = new List<Vertex[]>();
+            //private List<List<Polygon>> Edge_Polys = new List<List<Polygon>>();
 
             /// <summary>
             /// A list of polygons.
@@ -215,44 +218,6 @@ namespace Hare
                 for (int i = 0; i < Vertex_Normals.Length; i++) Vertex_Normals[i].Normalize();
             }
 
-            //public void Add_Polygon(Point[] P, int Plane_ID)
-            //{
-            //    List<Vertex> VertexList = new List<Vertex>(P.Length);
-
-            //    if (Plane_ID > Plane_Members.Length-1)
-            //    {
-            //        Array.Resize<List<int>>(ref Plane_Members, Plane_ID+1);
-            //        for (int i = 0; i < Plane_ID+1; i++)
-            //        {
-            //            if (Plane_Members[Plane_ID] == null) Plane_Members[Plane_ID] = new List<int>();
-            //        }
-            //    }
-
-            //    Plane_Members[Plane_ID].Add(Polys.Count);
-
-            //    for (int p = 0; p < P.Length; p++)
-            //    {
-            //        Vertex pt;
-            //        this.AddGetIndex(P[p], out pt);
-            //        VertexList.Add(pt);
-            //    }
-
-            //    if (P.Length == 4)
-            //    {
-            //        lock (Top_Lock) Polys.Add(new Quadrilateral(ref VertexList, 0, Polys.Count - 1, Plane_ID));
-            //        //Polys[Polys.Count - 1] = new Quadrilateral(ref Vertices, VertexList, 0, Polys.Length - 1);
-            //    }
-            //    else if (P.Length == 3)
-            //    {
-            //        lock (Top_Lock) Polys.Add(new Triangle(ref VertexList, 0, Polys.Count - 1, Plane_ID));
-            //        //Polys[Polys.Count - 1] = new Triangle(ref Vertices, VertexList, 0, Polys.Length - 1);
-            //    }
-            //    else
-            //    {
-            //        throw new NotImplementedException("Hare Does not yet support polygons of more than 4 sides.");
-            //    }
-            //}
-
             /// <summary>
             /// Adds a polygon to the topology. Can be used immediately after initializing the topology.
             /// </summary>
@@ -268,31 +233,24 @@ namespace Hare
                     VertexList.Add(pt);
                 }
 
+                Polygon poly;
                 if (P.Length == 4)
                 {
-                    lock (Top_Lock) Polys.Add(new Quadrilateral(ref VertexList, 0, Polys.Count));
+                    poly = new Quadrilateral(ref VertexList, 0, Polys.Count);
                 }
                 else if (P.Length == 3)
                 {
-                    lock (Top_Lock) Polys.Add(new Triangle(ref VertexList, 0, Polys.Count));
+                    poly = new Triangle(ref VertexList, 0, Polys.Count);
                 }
                 else
                 {
                     throw new NotImplementedException("Hare Does not yet support polygons of more than 4 sides.");
                 }
-
-                //plane p1 = new plane(Polys[Polys.Count - 1]);
-                //for (int i = 0; i < planeList.Count; i++) if (p1.GetHashCode() == planeList[i].GetHashCode())
-                //    {
-                //        Polys[Polys.Count - 1].Plane_ID = i;
-                //        Plane_Members[i].Add(Polys.Count - 1);
-                //        return;
-                //    }
-                //planeList.Add(p1);
-                //Array.Resize<List<int>>(ref Plane_Members, Plane_Members.Length + 1);
-                //Plane_Members[Plane_Members.Length - 1] = new List<int>();
-                //Plane_Members[Plane_Members.Length - 1].Add(Polys.Count - 1);
-                //Polys[Polys.Count - 1].Plane_ID = planeList.Count - 1;
+                lock (Top_Lock)
+                {
+                    Polys.Add(poly);
+                    foreach (Vertex v in VertexList) v.Polys.Add(poly);
+                }
             }
 
             Object Top_Lock = new Object();
@@ -316,17 +274,24 @@ namespace Hare
                         VertexList.Add(pt);
                     }
 
+                    Polygon poly;
                     if (VertexList.Count == 4)
                     {
-                        lock (Top_Lock) Polys.Add(new Quadrilateral(ref VertexList, 0, Polys.Count));    
+                        poly = new Quadrilateral(ref VertexList, 0, Polys.Count);
                     }
                     else if (VertexList.Count == 3)
                     {
-                        lock (Top_Lock) Polys.Add(new Triangle(ref VertexList, 0, Polys.Count));
+                        poly = new Triangle(ref VertexList, 0, Polys.Count);
                     }
                     else
                     {
                             throw new NotImplementedException("Hare Does not yet support polygons of more than 4 sides.");
+                    }
+
+                    lock (Top_Lock)
+                    {
+                        Polys.Add(poly);
+                        foreach (Vertex v in VertexList) v.Polys.Add(poly);
                     }
                 }//);
 
