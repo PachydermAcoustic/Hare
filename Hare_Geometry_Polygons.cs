@@ -29,6 +29,7 @@ namespace Hare
             //protected internal 
             public Vector Normal;
             public Vertex[] Points;
+            public List<Edge> Edges;
             protected internal int VertexCount;
             protected double d;
             protected internal bool IsDegenerate = false;
@@ -94,14 +95,11 @@ namespace Hare
             //    IsConvex = Convexity();
             //}
 
-            public Polygon(ref List<Vertex> Vertices, int index, int id, int Plane_ID)
-            :this(ref Vertices, index, id)
+            public Polygon(ref List<Vertex> Vertices, int index, int id, int Plane_ID = -1, List<Edge> edges = null)
             {
                 Plane_index = Plane_ID;
-            }
+                if (edges != null) Edges = edges;
 
-            public Polygon(ref List<Vertex> Vertices, int index, int id)
-            {
                 top_index = index;
 
                 for (int j = 2; j < Vertices.Count; j++)

@@ -205,14 +205,39 @@ namespace Hare
         
         public class Edge
         {
+            public System.Collections.Generic.List<Polygon> Polys = new System.Collections.Generic.List<Polygon>();
             Vertex[] pts = new Vertex[2];
             int code;
-                
+
             public Edge (Vertex a, Vertex b)
             {
                 pts[0] = a;
                 pts[1] = b;
                 code = Hash(a, b);
+            }
+
+            public Vertex a
+            {
+                get
+                {
+                    return pts[0];
+                }
+            }
+
+            public Vertex b
+            {
+                get
+                {
+                    return pts[1];
+                }
+            }
+
+            public Point mid
+            {
+                get
+                {
+                    return a + b / 2;
+                }
             }
 
             public static int Hash(Point a, Point b)

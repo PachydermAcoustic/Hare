@@ -33,8 +33,7 @@ namespace Hare
 
             private List<Vertex> Vertices_List = new List<Vertex>();
             private List<List<Polygon>> Vertex_Polys = new List<List<Polygon>>();
-            //private List<Vertex[]> Edges = new List<Vertex[]>();
-            //private List<List<Polygon>> Edge_Polys = new List<List<Polygon>>();
+            private Dictionary<int, Edge> Edges = new Dictionary<int, Edge>();
 
             /// <summary>
             /// A list of polygons.
@@ -44,6 +43,7 @@ namespace Hare
             /// A list of planes on which polygons lie.
             /// </summary>
             public List<plane> planeList = new List<plane>();
+            public List<Edge> planeEdges = new List<Edge>();
             /// <summary>
             /// The min point of the topology bounding  box.
             /// </summary>
@@ -274,6 +274,14 @@ namespace Hare
                         VertexList.Add(pt);
                     }
 
+                    List<Edge> EdgeList = new List<Edge>();
+                    for(int p = 0; p < VertexList.Count; p++)
+                    {
+                        Edge e;
+                        this.AddGetEdge(VertexList[p], VertexList[(p + 1) % VertexList.Count], out e);
+                        EdgeList.Add(e);
+                    }
+
                     Polygon poly;
                     if (VertexList.Count == 4)
                     {
@@ -292,6 +300,7 @@ namespace Hare
                     {
                         Polys.Add(poly);
                         foreach (Vertex v in VertexList) v.Polys.Add(poly);
+                        foreach (Edge e in EdgeList) e.Polys.Add(poly);
                     }
                 }//);
 
@@ -356,14 +365,22 @@ namespace Hare
                         Vertices.Add(Hash_1, D);
                     }
                 }
+            }
 
-                //if (x.x < Min.x) Min.x = x.x;
-                //if (x.y < Min.y) Min.y = x.y;
-                //if (x.z < Min.z) Min.z = x.z;
-
-                //if (x.x > Max.x) Max.x = x.x;
-                //if (x.y > Max.y) Max.y = x.y;
-                //if (x.z > Max.z) Max.z = x.z;
+            private void AddGetEdge(Vertex x, Vertex y, out Edge e_out)
+            {
+                //Identify which grid point the point is located in...
+                lock (Top_Lock)
+                {
+                    Edge e = new Edge(x, y);
+                    if (Edges.ContainsKey(e.GetHashCode())) e_out = Edges[e.GetHashCode()];
+                    else
+                    {
+                        Edges.Add(e.GetHashCode(), e);
+                        e_out = Edges[e.GetHashCode()];
+                    }
+                }
+                return;
             }
 
             /// <summary>
