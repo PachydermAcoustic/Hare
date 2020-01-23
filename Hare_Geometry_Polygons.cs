@@ -1,6 +1,6 @@
 //'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
-//'Copyright (c) 2008 - 2015, Arthur van der Harten			
+//'Copyright (c) 2008 - 2019, Arthur van der Harten			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or
@@ -29,7 +29,8 @@ namespace Hare
             //protected internal 
             public Vector Normal;
             public Vertex[] Points;
-            public List<Edge> Edges;
+            public List<Edge> Edges = new List<Edge>();
+            public Point Centroid;
             protected internal int VertexCount;
             protected double d;
             protected internal bool IsDegenerate = false;
@@ -101,6 +102,10 @@ namespace Hare
                 if (edges != null) Edges = edges;
 
                 top_index = index;
+
+                Centroid = new Hare.Geometry.Point();
+                for (int i = 0; i < Vertices.Count; i++) Centroid += Vertices[i];
+                Centroid /= Vertices.Count;
 
                 for (int j = 2; j < Vertices.Count; j++)
                 {
