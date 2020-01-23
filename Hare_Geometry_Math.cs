@@ -1,6 +1,6 @@
 //'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
-//'Copyright (c) 2008 - 2015, Arthur van der Harten			
+//'Copyright (c) 2008 - 2019, Arthur van der Harten			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or

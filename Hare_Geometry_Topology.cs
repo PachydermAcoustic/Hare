@@ -1,6 +1,6 @@
 //'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
-//'Copyright (c) 2008 - 2015, Arthur van der Harten			
+//'Copyright (c) 2008 - 2019, Arthur van der Harten			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or
@@ -33,7 +33,7 @@ namespace Hare
 
             private List<Vertex> Vertices_List = new List<Vertex>();
             private List<List<Polygon>> Vertex_Polys = new List<List<Polygon>>();
-            private Dictionary<int, Edge> Edges = new Dictionary<int, Edge>();
+            private Dictionary<System.Int64, Edge> Edges = new Dictionary<System.Int64, Edge>();
 
             /// <summary>
             /// A list of polygons.
@@ -67,7 +67,7 @@ namespace Hare
             /// <summary>
             /// A simple constructor which initializes the topology at maximum precision.
             /// </summary>
-            public Topology() : this(15) { }
+            public Topology() : this(6) { }
 
             /// <summary>
             /// A simple constructor which allows the user to choose the precision.
@@ -275,9 +275,11 @@ namespace Hare
                     }
 
                     List<Edge> EdgeList = new List<Edge>();
-                    for(int p = 0; p < VertexList.Count; p++)
+
+                    for (int p = 0; p < VertexList.Count; p++)
                     {
                         Edge e;
+                        if ((VertexList[p] - VertexList[(p + 1) % VertexList.Count]).Length() < 0.0001) continue;
                         this.AddGetEdge(VertexList[p], VertexList[(p + 1) % VertexList.Count], out e);
                         EdgeList.Add(e);
                     }
@@ -300,7 +302,11 @@ namespace Hare
                     {
                         Polys.Add(poly);
                         foreach (Vertex v in VertexList) v.Polys.Add(poly);
-                        foreach (Edge e in EdgeList) e.Polys.Add(poly);
+                        foreach (Edge e in EdgeList)
+                        {
+                            poly.Edges.Add(e);
+                            e.Append_Poly_Relationship(poly);
+                        }
                     }
                 }//);
 
@@ -372,12 +378,16 @@ namespace Hare
                 //Identify which grid point the point is located in...
                 lock (Top_Lock)
                 {
-                    Edge e = new Edge(x, y);
-                    if (Edges.ContainsKey(e.GetHashCode())) e_out = Edges[e.GetHashCode()];
+                    System.Int64 eh = Edge.Hash(x, y, this.Modspace);
+
+                    if (Edges.ContainsKey(eh))
+                    {
+                        e_out = Edges[eh];
+                    }
                     else
                     {
-                        Edges.Add(e.GetHashCode(), e);
-                        e_out = Edges[e.GetHashCode()];
+                        Edges.Add(eh, new Edge(x,y));
+                        e_out = Edges[eh];
                     }
                 }
                 return;
