@@ -67,7 +67,7 @@ namespace Hare
             /// <summary>
             /// A simple constructor which initializes the topology at maximum precision.
             /// </summary>
-            public Topology() : this(6) { }
+            public Topology() : this(15) { }
 
             /// <summary>
             /// A simple constructor which allows the user to choose the precision.
