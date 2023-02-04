@@ -148,6 +148,7 @@ namespace Hare
 
                 // Ray intersects all 3 slabs. Return point (q) and intersection t value (tmin) 
                 P = R.origin + R.direction * tmin;
+                
                 return true;
             }
 
