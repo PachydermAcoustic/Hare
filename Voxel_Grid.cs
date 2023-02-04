@@ -193,8 +193,8 @@ namespace Hare
 
                     int processorCT = System.Environment.ProcessorCount;
 
-                    System.Threading.Tasks.Parallel.For(0, Model.Length, m =>
-                    //for (int m = 0; m < Model.Length; m++)
+                    //System.Threading.Tasks.Parallel.For(0, Model.Length, m =>
+                    for (int m = 0; m < Model.Length; m++)
                     {
                         System.Threading.Thread[] T_List = new System.Threading.Thread[processorCT];
                         for (int P_I = 0; P_I < processorCT; P_I++)
@@ -238,7 +238,7 @@ namespace Hare
                             T_List[P_I] = new System.Threading.Thread(TS);
                             T_List[P_I].Start(T_);
                         }
-
+                        
                         bool finished = false;
 
                         do
@@ -254,7 +254,7 @@ namespace Hare
                                 }
                             }
                         } while (!finished);
-                    });
+                    }//);
 
                     Voxels = Voxels_temp;
                     Voxel_Inv = Voxel_Inv_temp;
@@ -405,9 +405,9 @@ namespace Hare
                         Ret_Event = new X_Event();
                         return false;
                     }
-                    X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 1E-12) / VoxelDims.x);
-                    Y = (int)Math.Floor((R.origin.y - OBox.Min.y + R.direction.y * 1E-12) / VoxelDims.y);
-                    Z = (int)Math.Floor((R.origin.z - OBox.Min.z + R.direction.z * 1E-12) / VoxelDims.z);
+                    X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 1E-6) / VoxelDims.x);
+                    Y = (int)Math.Floor((R.origin.y - OBox.Min.y + R.direction.y * 1E-6) / VoxelDims.y);
+                    Z = (int)Math.Floor((R.origin.z - OBox.Min.z + R.direction.z * 1E-6) / VoxelDims.z);
                 }
 
                 if (R.direction.x < 0)
