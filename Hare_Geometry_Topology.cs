@@ -260,7 +260,7 @@ namespace Hare
                 Min = new Point(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
                 Max = new Point(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
 
-                Vertices = new SortedDictionary<ulong,SortedDictionary<ulong,Vertex>>();
+                Vertices = new SortedDictionary<ulong, SortedDictionary<ulong, Vertex>>();
                 Polys = new List<Polygon>(T.Length);
 
                 for (int i = 0; i < T.Length; i++)
@@ -363,7 +363,7 @@ namespace Hare
                     }
                     else 
                     {
-                        D = new SortedDictionary<ulong,Vertex>();
+                        D = new SortedDictionary<ulong, Vertex>();
                         Vertex xpt = new Vertex(x, Vertices_List.Count);
                         Vertices_List.Add(xpt);
                         D.Add(Hash_2, xpt);
