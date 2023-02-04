@@ -43,7 +43,7 @@ namespace Hare
             /// A list of planes on which polygons lie.
             /// </summary>
             public List<plane> planeList = new List<plane>();
-            public List<Edge> planeEdges = new List<Edge>();
+            public Edge[] planeEdges = new Edge[0];
             /// <summary>
             /// The min point of the topology bounding  box.
             /// </summary>
@@ -152,17 +152,17 @@ namespace Hare
 
                 ///Find bounds of the model...
                 foreach (Point p in Vertices_List)
-                    {
-                        if (Minx > p.x) Minx = p.x;
-                        if (Miny > p.y) Miny = p.y;
-                        if (Minz > p.z) Minz = p.z;
-                        if (Maxx < p.x) Maxx = p.x;
-                        if (Maxy < p.y) Maxy = p.y;
-                        if (Maxz < p.z) Maxz = p.z;
-                    }
+                {
+                    if (Minx > p.x) Minx = p.x;
+                    if (Miny > p.y) Miny = p.y;
+                    if (Minz > p.z) Minz = p.z;
+                    if (Maxx < p.x) Maxx = p.x;
+                    if (Maxy < p.y) Maxy = p.y;
+                    if (Maxz < p.z) Maxz = p.z;
+                }
 
                 Modspace = new MS_AABB(new Hare.Geometry.Point(Minx, Miny, Minz), new Hare.Geometry.Point(Maxx, Maxy, Maxz));
-                
+
                 Min = new Point(Minx - 0.000000000001, Miny - 0.000000000001, Minz - 0.000000000001);
                 Max = new Point(Maxx + 0.000000000001, Maxy + 0.000000000001, Maxz + 0.000000000001);
 
@@ -211,7 +211,7 @@ namespace Hare
                 for (int i = 0; i < Vertices_List.Count; i++) Vertex_Normals[i] = new Vector();
 
                 foreach(Polygon pol in Polys)
-                {                    
+                {
                     foreach (Vertex pt in pol.Points) Vertex_Normals[pt.index] += pol.Normal;
                 }
 
@@ -295,7 +295,7 @@ namespace Hare
                     }
                     else
                     {
-                            throw new NotImplementedException("Hare Does not yet support polygons of more than 4 sides.");
+                        throw new NotImplementedException("Hare Does not yet support polygons of more than 4 sides.");
                     }
 
                     lock (Top_Lock)
@@ -334,6 +334,9 @@ namespace Hare
                         Polys[i].Plane_ID = planeList.Count - 1;
                     }
                 }
+
+                planeEdges = new Edge[Edges.Count];
+                Edges.Values.CopyTo(planeEdges, 0);
             }
 
             private void AddGetIndex(Point x, out Vertex x_out)
@@ -361,7 +364,7 @@ namespace Hare
                             x_out = xpt;
                         }
                     }
-                    else 
+                    else
                     {
                         D = new SortedDictionary<ulong, Vertex>();
                         Vertex xpt = new Vertex(x, Vertices_List.Count);
@@ -386,7 +389,7 @@ namespace Hare
                     }
                     else
                     {
-                        Edges.Add(eh, new Edge(x,y));
+                        Edges.Add(eh, new Edge(x, y));
                         e_out = Edges[eh];
                     }
                 }
@@ -405,7 +408,7 @@ namespace Hare
                     return this.Vertices_List[index];
                 }
             }
-            
+
             /// <summary>
             /// Returns a point referenced by a given polygon and vertex index.
             /// </summary>
@@ -431,7 +434,7 @@ namespace Hare
             {
                 double u, v, t;
                 Point P;
-                Polys[Poly_ID].Intersect(R,this.Polygon_Vertices(Poly_ID), out P, out u, out v, out t, out Poly_ID);
+                Polys[Poly_ID].Intersect(R, this.Polygon_Vertices(Poly_ID), out P, out u, out v, out t, out Poly_ID);
 
                 X = new X_Event(P, u, v, t, Poly_ID);
                 return true;
@@ -467,9 +470,9 @@ namespace Hare
             /// <summary>
             /// Gets the number of polygons in the topology.
             /// </summary>
-            public int Polygon_Count 
+            public int Polygon_Count
             {
-                get 
+                get
                 {
                     return Polys.Count;
                 }
@@ -493,9 +496,9 @@ namespace Hare
             /// <param name="v"></param>
             public void Set_Vertex(int i, Point v)
             {
-                    Vertices_List[i].x = v.x;
-                    Vertices_List[i].y = v.y;
-                    Vertices_List[i].z = v.z;
+                Vertices_List[i].x = v.x;
+                Vertices_List[i].y = v.y;
+                Vertices_List[i].z = v.z;
             }
 
             /// <summary>
@@ -515,7 +518,7 @@ namespace Hare
                 for (int i = 0; i < Faces.Length; i++)
                 {
                     List<Vertex> Verts = new List<Vertex>(new Vertex[3] { VX[Faces[i][0]], VX[Faces[i][1]], VX[Faces[i][2]] });
-                    Polys.Add(new Triangle(ref Verts , i, i));
+                    Polys.Add(new Triangle(ref Verts, i, i));
                 }
             }
 
@@ -568,7 +571,7 @@ namespace Hare
             /// <param name="P">The point to reference.</param>
             /// <param name="Poly_ID">The polygon from which the plane to be used will be taken.</param>
             /// <returns>the distance from the point to the plane.</returns>
-            public double DistToPlane (Point P, int Poly_ID)
+            public double DistToPlane(Point P, int Poly_ID)
             {
                 return Polys[Poly_ID].DistToPlane(P);
             }
@@ -581,8 +584,8 @@ namespace Hare
             /// <returns>The point on the polygon</returns>
             public Point Closest_Point(Point P, int Poly_ID)
             {
-                Point[] PT = new Point[Polys[Poly_ID].VertexCount -2];
-                for (int p = 0, i = 0, j = 1, k = 2; k < Polys[Poly_ID].VertexCount;p++, j++, k++)
+                Point[] PT = new Point[Polys[Poly_ID].VertexCount - 2];
+                for (int p = 0, i = 0, j = 1, k = 2; k < Polys[Poly_ID].VertexCount; p++, j++, k++)
                 {
                     PT[p] = TriangleClosestPt(P, Polys[Poly_ID].Points[i], Polys[Poly_ID].Points[j], Polys[Poly_ID].Points[k]);
                 }
@@ -598,7 +601,7 @@ namespace Hare
                         A = PT[p];
                     }
                 }
-                return A;                 
+                return A;
             }
 
             /// <summary>
@@ -664,10 +667,10 @@ namespace Hare
 
             public class MS_AABB : AABB
             {
-                public int xdim, ydim, zdim, XYTot;   
+                public int xdim, ydim, zdim, XYTot;
 
                 public MS_AABB(Point Point_Min_in, Point Point_Max_in)
-                    :base(Point_Min_in, Point_Max_in)
+                    : base(Point_Min_in, Point_Max_in)
                 {
 
                     double xl = this.X_Length(), yl = this.Y_Length(), zl = this.Z_Length();

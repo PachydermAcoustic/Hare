@@ -164,6 +164,14 @@ namespace Hare
                 }
             }
 
+            public int Poly_ID
+            {
+                get
+                {
+                    return this.Poly_index;
+                }
+            }
+
             public void reverse()
             {
                 Array.Reverse(Points);
