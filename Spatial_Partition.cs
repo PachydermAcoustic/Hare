@@ -27,6 +27,7 @@ namespace Hare
             public int[,][] Poly_Ray_ID;
             public double Char_Step;
             public abstract bool Shoot(Ray R, int top_index, out X_Event Ret_event);
+            public abstract bool Shoot(Ray R, int top_index, out X_Event Ret_event, int poly_origin1, int poly_origin2 = -1);
             public abstract void Box_Intersect(AABB box, out System.Collections.Generic.List<int> isect);
         }
     }
