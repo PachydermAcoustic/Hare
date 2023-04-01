@@ -384,7 +384,183 @@ namespace Hare
             /// <param name="top_index"> Indicates the topology the ray is to intersect. </param>
             /// <param name="Ret_Event"> The nearest resulting intersection information, if any. </param>
             /// <returns> Indicates whether or not an intersection was found. </returns>
-            public override bool Shoot(Ray R, int top_index, out X_Event Ret_Event)//, On3dPoint EndPt, int Octave_in)
+            public override bool Shoot(Ray R, int top_index, out X_Event Ret_Event, int poly_origin1, int poly_origin2 = -1)
+            {
+                int X, Y, Z;
+                //Identify which voxel the Origin point is located in...
+                X = (int)Math.Floor((R.origin.x - OBox.Min.x) / VoxelDims.x);
+                Y = (int)Math.Floor((R.origin.y - OBox.Min.y) / VoxelDims.y);
+                Z = (int)Math.Floor((R.origin.z - OBox.Min.z) / VoxelDims.z);
+
+                double tDeltaX, tDeltaY, tDeltaZ;
+                double tMaxX = 0, tMaxY = 0, tMaxZ = 0;
+
+                int stepX, stepY, stepZ, OutX, OutY, OutZ;
+                double t_start = 0;
+
+                if (X < 0 || X >= VoxelCtX || Y < 0 || Y >= VoxelCtY || Z < 0 || Z >= VoxelCtZ) //return false;
+                {
+                    if (!OBox.Intersect(R, ref t_start, ref R.origin))
+                    {
+                        Ret_Event = new X_Event();
+                        return false;
+                    }
+                    X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 1E-6) / VoxelDims.x);
+                    Y = (int)Math.Floor((R.origin.y - OBox.Min.y + R.direction.y * 1E-6) / VoxelDims.y);
+                    Z = (int)Math.Floor((R.origin.z - OBox.Min.z + R.direction.z * 1E-6) / VoxelDims.z);
+                }
+
+                if (R.direction.x < 0)
+                {
+                    OutX = -1;
+                    stepX = -1;
+                    tMaxX = (Voxels[X, Y, Z].Min.x - R.origin.x) / R.direction.x;
+                    tDeltaX = VoxelDims.x / R.direction.x * stepX;
+                }
+                else
+                {
+                    OutX = VoxelCtX;
+                    stepX = 1;
+                    tMaxX = (Voxels[X, Y, Z].Max.x - R.origin.x) / R.direction.x;
+                    tDeltaX = VoxelDims.x / R.direction.x * stepX;
+                }
+
+                if (R.direction.y < 0)
+                {
+                    OutY = -1;
+                    stepY = -1;
+                    tMaxY = (Voxels[X, Y, Z].Min.y - R.origin.y) / R.direction.y;
+                    tDeltaY = VoxelDims.y / R.direction.y * stepY;
+                }
+                else
+                {
+                    OutY = VoxelCtY;
+                    stepY = 1;
+                    tMaxY = (Voxels[X, Y, Z].Max.y - R.origin.y) / R.direction.y;
+                    tDeltaY = VoxelDims.y / R.direction.y * stepY;
+                }
+
+                if (R.direction.z < 0)
+                {
+                    OutZ = -1;
+                    stepZ = -1;
+                    tMaxZ = (Voxels[X, Y, Z].Min.z - R.origin.z) / R.direction.z;
+                    tDeltaZ = VoxelDims.z / R.direction.z * stepZ;
+                }
+                else
+                {
+                    OutZ = VoxelCtZ;
+                    stepZ = 1;
+                    tMaxZ = (Voxels[X, Y, Z].Max.z - R.origin.z) / R.direction.z;
+                    tDeltaZ = VoxelDims.z / R.direction.z * stepZ;
+                }
+
+                List<Point> X_LIST = new List<Point>();
+                List<double> ulist = new List<double>();
+                List<double> vlist = new List<double>();
+                List<double> tlist = new List<double>();
+                List<int> pidlist = new List<int>();
+
+                while (true)
+                {
+                    //Check all polygons in the current voxel...
+                    foreach (int i in Voxel_Inv[X, Y, Z, top_index])
+                    {
+                        if (i == poly_origin1 || i == poly_origin2) continue;
+                        if (Poly_Ray_ID[R.ThreadID, top_index][i] != R.Ray_ID)
+                        {
+                            Poly_Ray_ID[R.ThreadID, top_index][i] = R.Ray_ID;
+                            Point Pt; double u = 0, v = 0, t = 0;
+                            if (Model[top_index].intersect(i, R, out Pt, out u, out v, out t) && t > 0.0000000001)
+                            {
+                                X_LIST.Add(Pt);
+                                ulist.Add(u);
+                                vlist.Add(v);
+                                tlist.Add(t);
+                                pidlist.Add(i);
+                            }
+                        }
+                    }
+
+                    for (int c = 0; c < X_LIST.Count; c++)
+                    {
+                        if (this.Voxels[X, Y, Z].IsPointInBox(X_LIST[c]))
+                        {
+                            int choice = c;
+                            //Ret_Event = new X_Event(X_LIST[c], ulist[c], vlist[c], tlist[c], pidlist[c];
+                            for (int s = c + 1; s < X_LIST.Count; s++)
+                            {
+                                if (tlist[s] < tlist[choice])
+                                {
+                                    choice = s;
+                                    //Ret_Event = X_LIST[s];
+                                }
+                            }
+                            Ret_Event = new X_Event(X_LIST[choice], ulist[choice], vlist[choice], tlist[choice] + t_start, pidlist[choice]);
+                            return true;
+                        }
+                    }
+
+                    //Find the Next Voxel...                    
+                    /////////////////////////////////////////////////
+                    if (tMaxX < tMaxY)
+                    {
+                        if (tMaxX < tMaxZ)
+                        {
+                            X += stepX;
+                            if (X < 0 || X >= VoxelCtX)
+                            {
+                                Ret_Event = new X_Event();
+                                return false; /* outside grid */
+                            }
+                            tMaxX = tMaxX + tDeltaX;
+                        }
+                        else
+                        {
+                            Z += stepZ;
+
+                            if (Z < 0 || Z >= VoxelCtZ)
+                            {
+                                Ret_Event = new X_Event();
+                                return false; /* outside grid */
+                            }
+                            tMaxZ = tMaxZ + tDeltaZ;
+                        }
+                    }
+                    else
+                    {
+                        if (tMaxY < tMaxZ)
+                        {
+                            Y += stepY;
+                            if (Y < 0 || Y >= VoxelCtY)
+                            {
+                                Ret_Event = new X_Event();
+                                return false; /* outside grid */
+                            }
+                            tMaxY = tMaxY + tDeltaY;
+                        }
+                        else
+                        {
+                            Z += stepZ;
+                            if (Z < 0 || Z >= VoxelCtZ)
+                            {
+                                Ret_Event = new X_Event();
+                                return false; /* outside grid */
+                            }
+                            tMaxZ = tMaxZ + tDeltaZ;
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Fire a ray into the model. Ray must start inside the bounding box of the Topology.
+            /// </summary>
+            /// <param name="R"> The ray to be entered. Make certain the Ray has a unique Ray_ID variable. </param>
+            /// <param name="top_index"> Indicates the topology the ray is to intersect. </param>
+            /// <param name="Ret_Event"> The nearest resulting intersection information, if any. </param>
+            /// <returns> Indicates whether or not an intersection was found. </returns>
+            public override bool Shoot(Ray R, int top_index, out X_Event Ret_Event)
             {
                 int X, Y, Z;
                 //Identify which voxel the Origin point is located in...

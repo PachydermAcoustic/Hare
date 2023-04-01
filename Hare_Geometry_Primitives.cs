@@ -93,7 +93,6 @@ namespace Hare
             public double x;
             public double y;
             public double z;
-
             public int code;
 
             public Point(Point p)
@@ -346,6 +345,8 @@ namespace Hare
             }
             public int ThreadID;
             public Point origin;
+            public int poly_origin1;
+            public int poly_origin2;
             public Vector direction;
             public int a;
             public int Ray_ID;
