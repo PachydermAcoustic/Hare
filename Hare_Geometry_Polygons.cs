@@ -1,6 +1,6 @@
 //'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
-//'Copyright (c) 2008 - 2019, Arthur van der Harten			
+//'Copyright (c) 2008 - 2015, Arthur van der Harten			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or
@@ -16,7 +16,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Hare
 {
@@ -30,8 +29,6 @@ namespace Hare
             //protected internal 
             public Vector Normal;
             public Vertex[] Points;
-            public List<Edge> Edges = new List<Edge>();
-            public Point Centroid;
             protected internal int VertexCount;
             protected double d;
             protected internal bool IsDegenerate = false;
@@ -56,104 +53,56 @@ namespace Hare
             public abstract bool Intersect(Ray R, Point[] P, out Point Xpt, out double u, out double v, out double t, out int polyid);
             public abstract Point GetRandomPoint(double Rndx, double Rndy, double Side);
 
-            public abstract double closestpoint(Point p);
+            //public Polygon(ref List<Point> Vertices, int[] Ps, int index, int id)
+            //{
+            //    top_index = index;
 
-            public Point triclosestpoint(int a, int b, int c, Point p)
-            {
-                // Check if P in vertex region outside A
-                Vector ab = Points[b] - Points[a];
-                Vector ac = Points[c] - Points[a];
-                Vector ap = p - Points[a];
-                double d1 = Hare_math.Dot(ab, ap);
-                double d2 = Hare_math.Dot(ac, ap);
-                if (d1 <= 0.0f && d2 <= 0.0f) return Points[a]; // barycentric coordinates (1,0,0)
+            //    for (int j = 2; j < Ps.Length; j++)
+            //    {
+            //        Normal = Hare_math.Cross(Vertices[Ps[1]] - Vertices[Ps[0]], Vertices[Ps[j]] - Vertices[Ps[0]]);
+            //        if (!Normal.IsZeroVector()) break;
+            //    }
 
-                // Check if P in vertex region outside B
-                Vector bp = p - Points[b];
-                double d3 = Hare_math.Dot(ab, bp);
-                double d4 = Hare_math.Dot(ac, bp);
-                if (d3 >= 0.0f && d4 <= d3) return Points[b]; // barycentric coordinates (0,1,0)
+            //    Points = new Point[Ps.Length];
+            //    for (int p = 0; p < Ps.Length; p++)
+            //    {
+            //        Points[p] = Vertices[Ps[p]];
+            //    }
 
-                // Check if P in edge region of AB, if so return projection of P onto AB
-                double vc = d1 * d4 - d3 * d2;
-                if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f)
-                {
-                    double v1 = d1 / (d1 - d3);
-                    return Points[a] + v1 * ab; // barycentric coordinates (1-v,v,0)
-                }
+            //    Normal.Normalize();
 
-                // Check if P in vertex region outside C
-                Vector cp = p - Points[c];
-                double d5 = Hare_math.Dot(ab, cp);
-                double d6 = Hare_math.Dot(ac, cp);
-                if (d6 >= 0.0f && d5 <= d6) return Points[c]; // barycentric coordinates (0,0,1)
+            //    diffz = new Vector(Normal.x, Normal.y, Normal.z);
+            //    diffx = new Vector(0, 0, 1);
+            //    double proj = Math.Abs(Hare_math.Dot(diffz, diffx));
+            //    if (0.99 < proj && 1.01 > proj) diffx = new Vector(1, 0, 0);
+            //    diffy = new Vector(diffz.x, diffz.y, diffz.z);
+            //    diffy = Hare_math.Cross(diffy, diffx);
+            //    diffx = Hare_math.Cross(diffy, diffz);
+            //    diffx.Normalize();
+            //    diffy.Normalize();
+            //    diffz.Normalize();
 
-                // Check if P in edge region of AC, if so return projection of P onto AC
-                double vb = d5 * d2 - d1 * d6;
-                if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f)
-                {
-                    double w1 = d2 / (d2 - d6);
-                    return Points[a] + w1 * ac; // barycentric coordinates (1-w,0,w)
-                }
+            //    d = Hare_math.Dot(Normal, Points[0]);
 
-                // Check if P in edge region of BC, if so return projection of P onto BC
-                double va = d3 * d6 - d5 * d4;
-                if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f)
-                {
-                    double w2 = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-                    return Points[b] + w2 * (Points[c] - Points[b]); // barycentric coordinates (0,1-w,w)
-                }
+            //    VertexCount = Points.Length;
+            //    Inv_Dot_Normal = 1 / (Hare_math.Dot(Normal, Normal));
+            //    if (VertexCount < 3)
+            //    {
+            //        IsDegenerate = true;
+            //    }
+            //    Poly_index = id;
+            //    IsConvex = Convexity();
+            //}
 
-                // P inside face region. Compute Q through its barycentric coordinates (u,v,w)
-                double denom = 1.0f / (va + vb + vc);
-                double vv = vb * denom;
-                double ww = vc * denom;
-                return Points[a] + ab * vv + ac * ww; // = u*a + v*b + w*c, u = va * denom = 1.0f - v - w
-
-            }
-
-            public double SqDistanceToEdges(Point p)
-            {
-                double d = double.PositiveInfinity;
-
-                for (int i = 0; i < Points.Length; i++)
-                {
-                    int mod = Points.Length - 1;
-                    Vector edge = Points[(i + 1) % mod] - Points[i];
-                    Vector peb = p - Points[(i + 1) % mod];
-                    Vector pea = p - Points[i];
-                    double e = Hare_math.Dot(pea, edge);
-                    if (e <= 0)
-                    {
-                        d = Math.Min(Hare_math.Dot(pea, pea), d);
-                        continue;
-                    }
-                    double f = Hare_math.Dot(edge, edge);
-                    if (e >= f)
-                    {
-                        d = Math.Min(Hare_math.Dot(peb, peb), d);
-                        continue;
-                    }
-                    else
-                    {
-                        d = Math.Min(Hare_math.Dot(pea, pea) - e * e / f, d);
-                        continue;
-                    }
-                }
-                return d;
-            }
-
-
-            public Polygon(ref List<Vertex> Vertices, int index, int id, int Plane_ID = -1, List<Edge> edges = null)
+            public Polygon(ref List<Vertex> Vertices, int index, int id, int Plane_ID)
+            :this(ref Vertices, index, id)
             {
                 Plane_index = Plane_ID;
-                if (edges != null) Edges = edges;
+            }
 
+            public Polygon(ref List<Vertex> Vertices, int index, int id)
+            {
                 top_index = index;
-
-                Centroid = new Hare.Geometry.Point();
-                for (int i = 0; i < Vertices.Count; i++) Centroid += Vertices[i];
-                Centroid /= Vertices.Count;
 
                 for (int j = 2; j < Vertices.Count; j++)
                 {
@@ -209,14 +158,6 @@ namespace Hare
                 set 
                 {
                     Plane_index = value;
-                }
-            }
-
-            public int Poly_ID
-            {
-                get
-                {
-                    return this.Poly_index;
                 }
             }
 
@@ -517,13 +458,6 @@ namespace Hare
                 double v = vrand * tmp;
                 return Points[0] + u * (Points[1] - Points[0]) + v * (Points[2] - Points[0]);
             }
-
-            public override double closestpoint(Point p)
-            {
-                Point p1 = triclosestpoint(0,1,2,p);
-                Vector p1p = p1 - p;
-                return p1p.x*p1p.x + p1p.y*p1p.y + p1p.z*p1p.z;
-            }
         }
 
         /// <summary>
@@ -604,20 +538,6 @@ namespace Hare
                 }
             }
 
-            public override double closestpoint(Point p)
-            {
-                Point p1 = triclosestpoint(0, 1, 2, p);
-                Vector p1p = p1 - p;
-                double p1ps = p1p.x * p1p.x + p1p.y * p1p.y + p1p.z * p1p.z;
-                if(p1ps < 0.01) return p1ps;
-
-                Point p2 = triclosestpoint(0, 3, 2, p);
-                Vector p2p = p2 - p;
-                double p2ps = p2p.x * p2p.x + p2p.y * p2p.y + p2p.z * p2p.z;
-                return Math.Min(p1ps, p2ps);
-            }
-
-
             public override Point GetRandomPoint(double urand, double vrand, double Side)
             {
                 //double u = urand;
@@ -675,11 +595,6 @@ namespace Hare
             //    }
             //    return c;
             //}
-
-            public override double closestpoint(Point p)
-            {
-                throw new NotImplementedException();
-            }
 
             public override Point GetRandomPoint(double urand, double vrand, double Side)
             {

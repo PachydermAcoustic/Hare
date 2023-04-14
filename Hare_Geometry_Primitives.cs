@@ -1,6 +1,6 @@
 ﻿//'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
-//'Copyright (c) 2008 - 2019, Arthur van der Harten			
+//'Copyright (c) 2008 - 2015, Arthur van der Harten			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or
@@ -24,11 +24,6 @@ namespace Hare
         /// </summary>
         public class Vector : Point
         {
-            public Vector(Point p)
-                :base(p.x, p.y, p.z)
-            {
-            }
-
             public Vector(double x_in, double y_in, double z_in)
                 : base(x_in, y_in, z_in)
             {
@@ -93,12 +88,8 @@ namespace Hare
             public double x;
             public double y;
             public double z;
-            public int code;
 
-            public Point(Point p)
-                : this(p.x, p.y, p.z)
-            {
-            }
+            int code;
 
             public Point(double x_in, double y_in, double z_in)
             {
@@ -114,11 +105,6 @@ namespace Hare
             }
 
             public static Point operator +(Point P, Point Q)
-            {
-                return new Point(P.x + Q.x, P.y + Q.y, P.z + Q.z);
-            }
-
-            public static Point operator +(Point P, Vertex Q)
             {
                 return new Point(P.x + Q.x, P.y + Q.y, P.z + Q.z);
             }
@@ -203,7 +189,6 @@ namespace Hare
         {
             public int index;
             public System.Collections.Generic.List<Polygon> Polys = new System.Collections.Generic.List<Polygon>();
-            public System.Collections.Generic.List<Edge> Edges = new System.Collections.Generic.List<Edge>();
 
             public Vertex(Point p, int id)
                 :base(p.x, p.y, p.z)
@@ -220,87 +205,14 @@ namespace Hare
         
         public class Edge
         {
-            public System.Collections.Generic.List<Polygon> Polys = new System.Collections.Generic.List<Polygon>();
-            public System.Collections.Generic.List<double> TributaryArea = new System.Collections.Generic.List<double>();
-            public System.Collections.Generic.List<double> TributaryLength = new System.Collections.Generic.List<double>();
-            public System.Collections.Generic.List<Hare.Geometry.Vector> Tangents = new System.Collections.Generic.List<Vector>();
             Vertex[] pts = new Vertex[2];
             int code;
-
+                
             public Edge (Vertex a, Vertex b)
             {
                 pts[0] = a;
                 pts[1] = b;
                 code = Hash(a, b);
-            }
-
-            public void Append_Poly_Relationship(Polygon p)
-            {
-                Polys.Add(p);
-                TributaryArea.Add(0.5 * Hare_math.Cross((pts[1] - pts[0]), (p.Centroid - pts[0])).Length());
-                Vector ab = pts[1] - pts[0];
-                Vector av = p.Centroid - pts[0];
-                Vector tan = p.Centroid - closestpoint(p.Centroid);
-                //TributaryLength.Add(Hare.Geometry.Hare_math.Cross(ab, av).Length() / ab.Length());
-                TributaryLength.Add(tan.Length());
-                tan.Normalize();
-                Tangents.Add(tan);
-            }
-
-            public Hare.Geometry.Point closestpoint(Hare.Geometry.Point P)
-            {
-                Hare.Geometry.Vector ab = b - a;
-                double t = Hare_math.Dot(P - a, ab) / Hare_math.Dot(ab, ab);
-                //if (t < 0) t = 0;
-                //else if (t > 1) t = 1;
-                return a + t * ab;
-            }
-
-            public Vertex a
-            {
-                get
-                {
-                    return pts[0];
-                }
-            }
-
-            public Vertex b
-            {
-                get
-                {
-                    return pts[1];
-                }
-            }
-
-            public Point mid
-            {
-                get
-                {
-                    return (a + b) / 2;
-                }
-            }
-
-            public static System.Int64 Hash(Point a, Point b, Topology.MS_AABB mod)
-            {
-                Point pt1, pt2;
-                if (a.x == b.x)
-                {
-                    if (a.y == b.y)
-                    {
-                        if (a.z == b.z) throw new Exception("Zero-length edge...");
-                        else if (a.z > b.z) { pt1 = a; pt2 = b; }
-                        else { pt2 = a; pt1 = b; }
-                    }
-                    else if (a.y > b.y) { pt1 = a; pt2 = b; }
-                    else { pt2 = a; pt1 = b; }
-                }
-                else if (a.x > b.x) { pt1 = a; pt2 = b; }
-                else { pt2 = a; pt1 = b; }
-                ulong[] h = new ulong[4];
-                pt1.Hash2(mod, out h[0], out h[1]);
-                pt2.Hash2(mod, out h[2], out h[3]);
-
-                return (System.Int64)(h[0] + 5*h[1] + 11*h[2] + 17*h[3]);
             }
 
             public static int Hash(Point a, Point b)
@@ -320,12 +232,13 @@ namespace Hare
                 else if (a.x > b.x) { pt1 = a; pt2 = b; }
                 else { pt2 = a; pt1 = b; }
 
-                int hash = (int)(pt1.x * 100);
-                hash = hash * 5 + (int)(pt2.x * 100);
-                hash = hash * 11 + (int)(pt1.y * 100);
-                hash = hash * 17 + (int)(pt2.y * 100);
+                int hash = 17;
+                hash = hash * 23 + (int)(pt1.x * 100);
+                hash = hash * 23 + (int)(pt2.x * 100);
+                hash = hash * 23 + (int)(pt1.y * 100);
+                hash = hash * 23 + (int)(pt2.y * 100);
                 hash = hash * 23 + (int)(pt1.z * 100);
-                hash = hash * 29 + (int)(pt2.z * 100);
+                hash = hash * 23 + (int)(pt2.z * 100);
                 return hash;
             }
         }
@@ -345,8 +258,6 @@ namespace Hare
             }
             public int ThreadID;
             public Point origin;
-            public int poly_origin1;
-            public int poly_origin2;
             public Vector direction;
             public int a;
             public int Ray_ID;
