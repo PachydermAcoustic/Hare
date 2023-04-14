@@ -276,7 +276,7 @@ namespace Hare
             {
                 get
                 {
-                    return a + b / 2;
+                    return (a + b) / 2;
                 }
             }
 
