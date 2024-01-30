@@ -1,15 +1,5 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
-
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-[assembly: AssemblyTitle("Hare")]
-[assembly: AssemblyDescription("Multi-Resolution Raytracing")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("NA")]
-[assembly: AssemblyProduct("Hare")]
-[assembly: AssemblyCopyright("Copyright © Arthur van der Harten, 2008-2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,15 +10,3 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("c36e6cb0-61ac-4ab3-9683-08389248eaca")]
-
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-[assembly: AssemblyVersion("0.0.0.5")]
-[assembly: AssemblyFileVersion("0.0.0.5")]

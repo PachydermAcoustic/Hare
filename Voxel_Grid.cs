@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Hare
 {
@@ -228,7 +229,7 @@ namespace Hare
                                                 //Check for Null Voxels
                                                 if (Voxel_Inv_temp[x, y, z, Tp.m] == null)
                                                 {
-                                                    System.Windows.Forms.MessageBox.Show("Whoops... Null Voxels Detected");
+                                                    throw new Exception("Whoops... Null Voxels Detected");
                                                 }
                                                 ///////////////////////
                                             }
@@ -308,7 +309,7 @@ namespace Hare
                             //Check for Null Voxels
                             if (Voxel_Inv[x, y, z, T.m] == null)
                             {
-                                System.Windows.Forms.MessageBox.Show("Whoops... Null Voxels Detected");
+                                throw new Exception("Whoops... Null Voxels Detected");
                             }
                             ///////////////////////
                         }

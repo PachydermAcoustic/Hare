@@ -404,12 +404,12 @@ namespace Hare
             }
         }
 
-        public class plane 
+        public class Plane 
         {
             double a, b, c, d;
             int code;
 
-            public plane(Polygon p)
+            public Plane(Polygon p)
             {
                 a = p.Normal.x;
                 b = p.Normal.y;

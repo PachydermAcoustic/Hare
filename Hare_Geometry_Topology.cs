@@ -42,7 +42,7 @@ namespace Hare
             /// <summary>
             /// A list of planes on which polygons lie.
             /// </summary>
-            public List<plane> planeList = new List<plane>();
+            public List<Plane> planeList = new List<Plane>();
             public Edge[] planeEdges = new Edge[0];
             /// <summary>
             /// The min point of the topology bounding  box.
@@ -312,7 +312,7 @@ namespace Hare
 
                 for (int i = 0; i < Polys.Count; i++)
                 {
-                    plane p1 = new plane(Polys[i]);
+                    Plane p1 = new Plane(Polys[i]);
                     bool foundit = false;
 
                     for (int j = 0; j < planeList.Count; j++)
