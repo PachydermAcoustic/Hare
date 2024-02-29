@@ -16,7 +16,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace Hare
 {
@@ -27,8 +26,11 @@ namespace Hare
         /// </summary>
         public class Voxel_Grid : Spatial_Partition
         {
+            public bool[,][] Poly_Ray_ID;
             protected int VoxelCtX, VoxelCtY, VoxelCtZ;
             protected AABB[, ,] Voxels;
+            uint no_of_boxes = 80000;
+            uint no_of_boxes_2 = 40000;
             public List<int>[,,,] Voxel_Inv;
             protected Point BoxDims;
             protected Point BoxDims_Inv;
@@ -37,6 +39,9 @@ namespace Hare
             protected AABB OBox;
             protected double Epsilon = 0.001;
             protected int XYTot;
+            uint rayno = 0;
+            object ctlock = new object();
+
             /// <summary>
             /// The voxel grid constructor. Concept based on Amanatides Fast Ray-Voxel Traversal Algorithm.
             /// </summary>
@@ -47,19 +52,13 @@ namespace Hare
                 Model = Model_in;                
                 Point MaxPT = new Point(Double.NegativeInfinity, Double.NegativeInfinity, Double.NegativeInfinity);
                 Point MinPT = new Point(Double.PositiveInfinity, Double.PositiveInfinity, Double.PositiveInfinity);
-                Poly_Ray_ID = new int[System.Environment.ProcessorCount, Model.Length][];
+                Poly_Ray_ID = new bool[Model.Length, no_of_boxes][]; //bool[Model.Length, System.Environment.ProcessorCount][];
 
-                int[][] Ray_ID = new int[Model.Length][];
                 for (int i = 0; i < Model.Length; i++)
                 {
-                    Ray_ID[i] = new int[Model[i].Polygon_Count];
-                }
-
-                for (int i = 0; i < System.Environment.ProcessorCount; i++)
-                {
-                    for (int p = 0; p < Model.Length; p++)
+                    for (int p = 0; p < no_of_boxes; p++)
                     {
-                        Poly_Ray_ID[i, p] = Ray_ID[p];
+                        Poly_Ray_ID[i, p] = new bool[Model[i].Polygon_Count];
                     }
                 }
 
@@ -134,19 +133,13 @@ namespace Hare
                 Model = Model_in;
                 Point MaxPT = new Point(Double.NegativeInfinity, Double.NegativeInfinity, Double.NegativeInfinity);
                 Point MinPT = new Point(Double.PositiveInfinity, Double.PositiveInfinity, Double.PositiveInfinity);
-                Poly_Ray_ID = new int[System.Environment.ProcessorCount, Model.Length][];
-                
-                int[][] Ray_ID = new int[Model.Length][];
+                Poly_Ray_ID = new bool[Model.Length, no_of_boxes][]; //bool[Model.Length, System.Environment.ProcessorCount][];
+
                 for (int i = 0; i < Model.Length; i++)
                 {
-                    Ray_ID[i] = new int[Model[i].Polygon_Count];
-                }
-
-                for (int i = 0; i < System.Environment.ProcessorCount; i++)
-                {
-                    for (int p = 0; p < Model.Length; p++)
+                    for (int p = 0; p < no_of_boxes; p++)
                     {
-                        Poly_Ray_ID[i, p] = Ray_ID[p];
+                        Poly_Ray_ID[i, p] = new bool[Model[i].Polygon_Count];
                     }
                 }
 
@@ -317,6 +310,30 @@ namespace Hare
                 }
             }
 
+            public async void reset_half(bool which)
+            {
+                await System.Threading.Tasks.Task.Run(() =>
+                {
+                //try
+                //{
+                    uint start = 0, end = no_of_boxes_2;
+                    if (which) { start = end; end = no_of_boxes; }
+
+                    for (uint i = 0; i < Model.Length; i++)
+                    {
+                        for (uint p = start; p < end; p++)
+                        {
+                            //Poly_Ray_ID[i, p] = new bool[Model[i].Polygon_Count];
+                            for (uint j = 0; j < Model[i].Polygon_Count; j++) Poly_Ray_ID[i, p][j] = false;
+                        }
+                    }
+                    //}
+                    //catch
+                    //{
+                    //    throw new Exception("Mailboxes don't like you...");
+                    //}
+                });
+            }
             //public void Fill_Voxels(object o)
             //{
             //    ThreadParams T = (ThreadParams)o;
@@ -378,6 +395,17 @@ namespace Hare
                 return VoxelCode((int)Math.Floor((Pt.x - OBox.Min.x) / VoxelDims.x), (int)Math.Floor((Pt.y - OBox.Min.y) / VoxelDims.y), (int)Math.Floor((Pt.z - OBox.Min.z) / VoxelDims.z));    
             }
 
+            protected uint assign_id()
+            {
+                lock (ctlock)
+                {
+                    rayno++;
+                    if (rayno == no_of_boxes) { rayno = 0; reset_half(true);  }
+                    else if (rayno == no_of_boxes_2) { reset_half(false); }
+                    return rayno;
+                }
+            }
+
             /// <summary>
             /// Fire a ray into the model. Ray must start inside the bounding box of the Topology.
             /// </summary>
@@ -387,6 +415,8 @@ namespace Hare
             /// <returns> Indicates whether or not an intersection was found. </returns>
             public override bool Shoot(Ray R, int top_index, out X_Event Ret_Event, int poly_origin1, int poly_origin2 = -1)
             {
+                uint rayid = assign_id();
+
                 int X, Y, Z;
                 //Identify which voxel the Origin point is located in...
                 X = (int)Math.Floor((R.origin.x - OBox.Min.x) / VoxelDims.x);
@@ -468,9 +498,9 @@ namespace Hare
                     foreach (int i in Voxel_Inv[X, Y, Z, top_index])
                     {
                         if (i == poly_origin1 || i == poly_origin2) continue;
-                        if (Poly_Ray_ID[R.ThreadID, top_index][i] != R.Ray_ID)
+                        if (!Poly_Ray_ID[top_index, rayid][i])
                         {
-                            Poly_Ray_ID[R.ThreadID, top_index][i] = R.Ray_ID;
+                            Poly_Ray_ID[top_index, rayid][i] = true;
                             Point Pt; double u = 0, v = 0, t = 0;
                             if (Model[top_index].intersect(i, R, out Pt, out u, out v, out t) && t > 0.0000000001)
                             {
@@ -563,6 +593,8 @@ namespace Hare
             /// <returns> Indicates whether or not an intersection was found. </returns>
             public override bool Shoot(Ray R, int top_index, out X_Event Ret_Event)
             {
+                uint rayid = assign_id();
+
                 int X, Y, Z;
                 //Identify which voxel the Origin point is located in...
                 X = (int)Math.Floor((R.origin.x - OBox.Min.x) / VoxelDims.x);
@@ -643,9 +675,9 @@ namespace Hare
                     //Check all polygons in the current voxel...
                     foreach (int i in Voxel_Inv[X, Y, Z, top_index])
                     {
-                        if (Poly_Ray_ID[R.ThreadID, top_index][i] != R.Ray_ID)
+                        if (!Poly_Ray_ID[top_index, rayid][i])
                         {
-                            Poly_Ray_ID[R.ThreadID, top_index][i] = R.Ray_ID;
+                            Poly_Ray_ID[top_index, rayid][i] = true;
                             Point Pt; double u = 0, v = 0, t = 0;
                             if (Model[top_index].intersect(i, R, out Pt, out u, out v, out t) && t > 0.0000000001)
                             {
