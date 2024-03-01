@@ -310,6 +310,14 @@ namespace Hare
                 }
             }
 
+            public void reset_one(int model, uint ray_id)
+            {
+                //await System.Threading.Tasks.Task.Run(() =>
+                //{
+                    for (uint j = 0; j < Model[model].Polygon_Count; j++) Poly_Ray_ID[model, ray_id][j] = false;
+                //});
+            }
+
             public async void reset_half(bool which)
             {
                 await System.Threading.Tasks.Task.Run(() =>
@@ -400,8 +408,8 @@ namespace Hare
                 lock (ctlock)
                 {
                     rayno++;
-                    if (rayno == no_of_boxes) { rayno = 0; reset_half(true);  }
-                    else if (rayno == no_of_boxes_2) { reset_half(false); }
+                    if (rayno == no_of_boxes) { rayno = 0; } //reset_half(true);  }
+                    //else if (rayno == no_of_boxes_2) { reset_half(false); }
                     return rayno;
                 }
             }
@@ -434,6 +442,7 @@ namespace Hare
                     if (!OBox.Intersect(R, ref t_start, ref R.origin))
                     {
                         Ret_Event = new X_Event();
+                        reset_one(top_index, rayid);
                         return false;
                     }
                     X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 1E-6) / VoxelDims.x);
@@ -528,6 +537,7 @@ namespace Hare
                                 }
                             }
                             Ret_Event = new X_Event(X_LIST[choice], ulist[choice], vlist[choice], tlist[choice] + t_start, pidlist[choice]);
+                            reset_one(top_index, rayid);
                             return true;
                         }
                     }
@@ -542,6 +552,7 @@ namespace Hare
                             if (X < 0 || X >= VoxelCtX)
                             {
                                 Ret_Event = new X_Event();
+                                reset_one(top_index, rayid);
                                 return false; /* outside grid */
                             }
                             tMaxX = tMaxX + tDeltaX;
@@ -553,6 +564,7 @@ namespace Hare
                             if (Z < 0 || Z >= VoxelCtZ)
                             {
                                 Ret_Event = new X_Event();
+                                reset_one(top_index, rayid);
                                 return false; /* outside grid */
                             }
                             tMaxZ = tMaxZ + tDeltaZ;
@@ -566,6 +578,7 @@ namespace Hare
                             if (Y < 0 || Y >= VoxelCtY)
                             {
                                 Ret_Event = new X_Event();
+                                reset_one(top_index, rayid);
                                 return false; /* outside grid */
                             }
                             tMaxY = tMaxY + tDeltaY;
@@ -576,6 +589,7 @@ namespace Hare
                             if (Z < 0 || Z >= VoxelCtZ)
                             {
                                 Ret_Event = new X_Event();
+                                reset_one(top_index, rayid);
                                 return false; /* outside grid */
                             }
                             tMaxZ = tMaxZ + tDeltaZ;
@@ -612,6 +626,7 @@ namespace Hare
                     if (!OBox.Intersect(R, ref t_start, ref R.origin))
                     {
                         Ret_Event = new X_Event();
+                        reset_one(top_index, rayid);
                         return false;
                     }
                     X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 1E-6) / VoxelDims.x);
@@ -705,6 +720,7 @@ namespace Hare
                                 }
                             }
                             Ret_Event = new X_Event(X_LIST[choice], ulist[choice], vlist[choice], tlist[choice] + t_start, pidlist[choice]);
+                            reset_one(top_index, rayid);
                             return true;
                         }
                     }
@@ -719,6 +735,7 @@ namespace Hare
                             if (X < 0 || X >= VoxelCtX)
                             {
                                 Ret_Event = new X_Event();
+                                reset_one(top_index, rayid);
                                 return false; /* outside grid */
                             }
                             tMaxX = tMaxX + tDeltaX;
@@ -730,6 +747,7 @@ namespace Hare
                             if (Z < 0 || Z >= VoxelCtZ)
                             {
                                 Ret_Event = new X_Event();
+                                reset_one(top_index, rayid);
                                 return false; /* outside grid */
                             }
                             tMaxZ = tMaxZ + tDeltaZ;
@@ -743,6 +761,7 @@ namespace Hare
                             if (Y < 0 || Y >= VoxelCtY)
                             {
                                 Ret_Event = new X_Event();
+                                reset_one(top_index, rayid);
                                 return false; /* outside grid */
                             }
                             tMaxY = tMaxY + tDeltaY;
@@ -753,6 +772,7 @@ namespace Hare
                             if (Z < 0 || Z >= VoxelCtZ)
                             {
                                 Ret_Event = new X_Event();
+                                reset_one(top_index, rayid);
                                 return false; /* outside grid */
                             }
                             tMaxZ = tMaxZ + tDeltaZ;
