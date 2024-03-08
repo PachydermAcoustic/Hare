@@ -85,8 +85,8 @@ namespace Hare
             public Topology(Point Minpt, Point Maxpt)
             :this()
             {
-                this.Max = Maxpt - new Point(0.000000000001, 0.000000000001, 0.000000000001);
-                this.Min = Minpt + new Point(0.000000000001, 0.000000000001, 0.000000000001);
+                this.Max = new Point( Maxpt.x + 0.000000000001, Maxpt.y + 0.000000000001, Maxpt.z + 0.000000000001);
+                this.Min = new Point(Minpt.x - 0.000000000001, Minpt.y - 0.000000000001, Minpt.z - 0.000000000001);
                 Modspace = new MS_AABB(Min, Max);
             }
 

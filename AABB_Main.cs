@@ -27,9 +27,27 @@ namespace Hare
             protected internal Point Min;
             protected Point[] Bounds;
             protected internal Point Center;
-            protected internal Point Width;
+            protected internal Vector Width;
             protected Point Inv_Width;
             protected Point halfwidth;
+
+            /// <summary>
+            /// Bounding Box Constructor.
+            /// </summary>
+            /// <param name="Min_in">The low point of the box.</param>
+            /// <param name="Max_in">The high point of the box.</param>
+            public AABB(double Minx, double Miny, double Minz , double Maxx, double Maxy, double Maxz)
+            {
+                Min = new Point(Minx, Miny, Minz);
+                Max = new Point(Maxx ,Maxy, Maxz);
+                Bounds = new Point[2];
+                Bounds[0] = Min;
+                Bounds[1] = Max;
+                Center = (Max + Min) / 2;
+                Width = Max - Min;
+                Inv_Width = new Point(1 / Width.dx, 1 / Width.dy, 1 / Width.dz);
+                halfwidth = new Point(Width.dx, Width.dy, Width.dz) / 2;
+            }
 
             /// <summary>
             /// Bounding Box Constructor.
@@ -45,8 +63,8 @@ namespace Hare
                 Bounds[1] = Max;
                 Center = (Max + Min) / 2;
                 Width = Max - Min;
-                Inv_Width = new Point(1 / Width.x,1 / Width.y,1 / Width.z);
-                halfwidth = (Max - Min) / 2;
+                Inv_Width = new Point(1 / Width.dx, 1 / Width.dy,1 / Width.dz);
+                halfwidth = new Point (Width.dx, Width.dy, Width.dz) / 2;
             }
 
             /// <summary>
@@ -54,14 +72,14 @@ namespace Hare
             /// </summary>
             /// <param name="P">The Point.</param>
             /// <returns>True if inside, false if not.</returns>
-            public bool IsPointInBox(Point P) 
+            public bool IsPointInBox(double x, double y, double z) 
             {
-                if (P.x < Min.x) return false;
-                if (P.y < Min.y) return false;
-                if (P.z < Min.z) return false;
-                if (P.x > Max.x) return false;
-                if (P.y > Max.y) return false;
-                if (P.z > Max.z) return false;
+                if (x < Min.x) return false;
+                if (y < Min.y) return false;
+                if (z < Min.z) return false;
+                if (x > Max.x) return false;
+                if (y > Max.y) return false;
+                if (z > Max.z) return false;
                 return true;
             }
 
@@ -71,17 +89,17 @@ namespace Hare
                 double tmax = double.MaxValue; // set to max distance ray can travel (for segment)
 
                 // For all three slabs
-                if (System.Math.Abs(R.direction.x) < double.Epsilon)
+                if (System.Math.Abs(R.dx) < double.Epsilon)
                 {
                     // Ray is parallel to slab. No hit if origin not within slab
-                    if (R.origin.x < Min.x || R.origin.x > Max.x) return false;
+                    if (R.x < Min.x || R.x > Max.x) return false;
                 }
                 else
                 {
                     // Compute intersection t value of ray with near and far plane of slab
-                    double ood = (1 / R.direction.x);
-                    double t1 = (Min.x - R.origin.x) * ood;
-                    double t2 = (Max.x - R.origin.x) * ood;
+                    double ood = (1 / R.dx);
+                    double t1 = (Min.x - R.x) * ood;
+                    double t2 = (Max.x - R.x) * ood;
                     // Make t1 be intersection with near plane, t2 with far plane
                     if (t1 > t2)
                     {
@@ -96,17 +114,17 @@ namespace Hare
                     if (tmin > tmax) return false;
                 }
 
-                if (System.Math.Abs(R.direction.y) < double.Epsilon)
+                if (System.Math.Abs(R.dy) < double.Epsilon)
                 {
                     // Ray is parallel to slab. No hit if origin not within slab
-                    if (R.origin.y < Min.y || R.origin.y > Max.y) return false;
+                    if (R.y < Min.y || R.y > Max.y) return false;
                 }
                 else
                 {
                     // Compute intersection t value of ray with near and far plane of slab
-                    double ood = (1 / R.direction.y);
-                    double t1 = (Min.y - R.origin.y) * ood;
-                    double t2 = (Max.y - R.origin.y) * ood;
+                    double ood = (1 / R.dy);
+                    double t1 = (Min.y - R.y) * ood;
+                    double t2 = (Max.y - R.y) * ood;
                     // Make t1 be intersection with near plane, t2 with far plane
                     if (t1 > t2)
                     {
@@ -121,17 +139,17 @@ namespace Hare
                     if (tmin > tmax) return false;
                 }
 
-                if (System.Math.Abs(R.direction.z) < double.Epsilon)
+                if (System.Math.Abs(R.dz) < double.Epsilon)
                 {
                     // Ray is parallel to slab. No hit if origin not within slab
-                    if (R.origin.z < Min.z || R.origin.z > Max.z) return false;
+                    if (R.z < Min.z || R.z > Max.z) return false;
                 }
                 else
                 {
                     // Compute intersection t value of ray with near and far plane of slab
-                    double ood = (1 / R.direction.z);
-                    double t1 = (Min.z - R.origin.z) * ood;
-                    double t2 = (Max.z - R.origin.z) * ood;
+                    double ood = (1 / R.dz);
+                    double t1 = (Min.z - R.z) * ood;
+                    double t2 = (Max.z - R.z) * ood;
                     // Make t1 be intersection with near plane, t2 with far plane
                     if (t1 > t2)
                     {
@@ -147,8 +165,97 @@ namespace Hare
                 }
 
                 // Ray intersects all 3 slabs. Return point (q) and intersection t value (tmin) 
-                P = R.origin + R.direction * tmin;
+                P = new Point(R.x + R.dx * tmin, R.y + R.dy * tmin, R.z + R.dz * tmin);
                 
+                return true;
+            }
+
+            public bool Intersect(ref Ray R, ref double tmin)
+            {
+                tmin = 0;          // set to -FLT_MAX to get first hit on line
+                double tmax = double.MaxValue; // set to max distance ray can travel (for segment)
+
+                // For all three slabs
+                if (System.Math.Abs(R.dx) < double.Epsilon)
+                {
+                    // Ray is parallel to slab. No hit if origin not within slab
+                    if (R.x < Min.x || R.x > Max.x) return false;
+                }
+                else
+                {
+                    // Compute intersection t value of ray with near and far plane of slab
+                    double ood = (1 / R.dx);
+                    double t1 = (Min.x - R.x) * ood;
+                    double t2 = (Max.x - R.x) * ood;
+                    // Make t1 be intersection with near plane, t2 with far plane
+                    if (t1 > t2)
+                    {
+                        double tswap = t1;
+                        t1 = t2;
+                        t2 = tswap;
+                    };
+                    // Compute the intersection of slab intersections intervals
+                    tmin = System.Math.Max(tmin, t1);
+                    tmax = System.Math.Min(tmax, t2);
+                    // Exit with no collision as soon as slab intersection becomes empty
+                    if (tmin > tmax) return false;
+                }
+
+                if (System.Math.Abs(R.dy) < double.Epsilon)
+                {
+                    // Ray is parallel to slab. No hit if origin not within slab
+                    if (R.y < Min.y || R.y > Max.y) return false;
+                }
+                else
+                {
+                    // Compute intersection t value of ray with near and far plane of slab
+                    double ood = (1 / R.dy);
+                    double t1 = (Min.y - R.y) * ood;
+                    double t2 = (Max.y - R.y) * ood;
+                    // Make t1 be intersection with near plane, t2 with far plane
+                    if (t1 > t2)
+                    {
+                        double tswap = t1;
+                        t1 = t2;
+                        t2 = tswap;
+                    };
+                    // Compute the intersection of slab intersections intervals
+                    tmin = System.Math.Max(tmin, t1);
+                    tmax = System.Math.Min(tmax, t2);
+                    // Exit with no collision as soon as slab intersection becomes empty
+                    if (tmin > tmax) return false;
+                }
+
+                if (System.Math.Abs(R.dz) < double.Epsilon)
+                {
+                    // Ray is parallel to slab. No hit if origin not within slab
+                    if (R.z < Min.z || R.z > Max.z) return false;
+                }
+                else
+                {
+                    // Compute intersection t value of ray with near and far plane of slab
+                    double ood = (1 / R.dz);
+                    double t1 = (Min.z - R.z) * ood;
+                    double t2 = (Max.z - R.z) * ood;
+                    // Make t1 be intersection with near plane, t2 with far plane
+                    if (t1 > t2)
+                    {
+                        double tswap = t1;
+                        t1 = t2;
+                        t2 = tswap;
+                    };
+                    // Compute the intersection of slab intersections intervals
+                    tmin = System.Math.Max(tmin, t1);
+                    tmax = System.Math.Min(tmax, t2);
+                    // Exit with no collision as soon as slab intersection becomes empty
+                    if (tmin > tmax) return false;
+                }
+
+                // Ray intersects all 3 slabs. Return point (q) and intersection t value (tmin) 
+                R.x = R.x + R.dx * tmin;
+                R.y = R.y + R.dy * tmin;
+                R.z = R.z + R.dz * tmin;
+
                 return true;
             }
 
@@ -195,7 +302,7 @@ namespace Hare
                 int ct = 0;
                 for (int i = 0; i < Pts.VertextCT; i++)
                 {
-                    if (this.IsPointInBox(Pts.Points[i]))
+                    if (this.IsPointInBox(Pts.Points[i].x, Pts.Points[i].y, Pts.Points[i].z))
                     {
                         ct++;
                         XPts.Add(Pts.Points[i]);
@@ -239,14 +346,14 @@ namespace Hare
                 Center /= XPts.Count;
 
                 System.Collections.SortedList PtSort = new System.Collections.SortedList();
-                if (Pts.Normal.x == 1)
+                if (Pts.Normal.dx == 1)
                 {
                     foreach (Point Pt in XPts)
                     {
                         PtSort.Add(System.Math.Atan2(Pt.y - Center.y, Pt.z - Center.z), Pt);
                     }
                 }
-                else if (Pts.Normal.y == 1)
+                else if (Pts.Normal.dy == 1)
                 {
                     foreach (Point Pt in XPts)
                     {
@@ -305,11 +412,11 @@ namespace Hare
                         return new Ray(pt, new Vector(Min.x, Max.y, Max.z) - pt, 0, 0);
 
                     case 9:
-                        return new Ray(Max_PT, Max_PT - new Vector(Max.x, Min.y, Max.z), 0, 0);
+                        return new Ray(Max_PT, new Vector(Max_PT.x - Max.x, Max_PT.y - Min.y, Max_PT.z - Max.z), 0, 0);
                     case 10:
-                        return new Ray(Min_PT, Max_PT - new Vector(Max.x, Max.y, Min.z), 0, 0);
+                        return new Ray(Min_PT, new Vector(Max_PT.x - Max.x, Max_PT.x - Max.y, Max_PT.x - Min.z), 0, 0);
                     case 11:
-                        return new Ray(Min_PT, Max_PT - new Vector(Max.x, Max.y, Min.z), 0, 0);
+                        return new Ray(Min_PT, new Vector(Max_PT.x - Max.x, Max_PT.x - Max.y, Max_PT.x - Min.z), 0, 0);
                     default:
                         return null;
                 }

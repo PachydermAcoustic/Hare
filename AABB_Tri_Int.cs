@@ -54,7 +54,7 @@ namespace Hare
                 double v;
 
                 v = vert.x;
-                if (normal.x > 0.0f)
+                if (normal.dx > 0.0f)
                 {
                     vmin.x = -maxbox.x - v;
                     vmax.x = maxbox.x - v;
@@ -66,7 +66,7 @@ namespace Hare
                 }
 
                 v = vert.y;
-                if (normal.y > 0.0f)
+                if (normal.dy > 0.0f)
                 {
                     vmin.y = -maxbox.y - v;
                     vmax.y = maxbox.y - v;
@@ -78,7 +78,7 @@ namespace Hare
                 }
 
                 v = vert.z;
-                if (normal.z > 0.0f)
+                if (normal.dz > 0.0f)
                 {
                     vmin.z = -maxbox.z - v;
                     vmax.z = maxbox.z - v;
@@ -89,12 +89,12 @@ namespace Hare
                     vmax.z = -maxbox.z - v;
                 }
 
-                if (Hare_math.Dot(normal, vmin) > 0.0f) return false;
-                if (Hare_math.Dot(normal, vmax) >= 0.0f) return true;
+                if (Hare_math.Dot(normal.dx, normal.dy, normal.dz, vmin.x, vmin.y, vmin.z) > 0.0f) return false;
+                if (Hare_math.Dot(normal.dx, normal.dy, normal.dz, vmax.x, vmax.y, vmax.z) >= 0.0f) return true;
                 return false;
             }
 
-            Vector v0, v1, v2;
+            Point v0, v1, v2;
             double min, max, rad, p0, p1, p2;
 
             /*======================== X-tests ========================*/
@@ -182,9 +182,9 @@ namespace Hare
                     /*    3) crossproduct(edge from tri, {x,y,z}-directin) */
                     /*       this gives 3x3=9 more tests */
 
-                    v0 = new Vector(0,0,0);
-                    v1 = new Vector(0,0,0);
-                    v2 = new Vector(0,0,0);
+                    v0 = new Point(0,0,0);
+                    v1 = new Point(0,0,0);
+                    v2 = new Point(0,0,0);
 
                     //   float axis[3];
                     double fex, fey, fez;		// -NJMP- "d" local variable removed
@@ -192,9 +192,15 @@ namespace Hare
 
                     /* This is the fastest branch on Sun */
                     /* move everything so that the boxcenter is in (0,0,0) */
-                    v0 = triverts[0] - Center;
-                    v1 = triverts[1] - Center;
-                    v2 = triverts[2] - Center;
+                    v0.x = triverts[0].x - Center.x;
+                    v0.y = triverts[0].y - Center.y;
+                    v0.z = triverts[0].z - Center.z;
+                    v1.x = triverts[1].x - Center.x;
+                    v1.y = triverts[1].y - Center.y;
+                    v1.z = triverts[1].z - Center.z;
+                    v2.x = triverts[2].x - Center.x;
+                    v2.y = triverts[2].y - Center.y;
+                    v2.z = triverts[2].z - Center.z;
 
                     /* compute triangle edges */
                     e0 = v1 - v0;     /* tri edge 0 */
@@ -203,26 +209,26 @@ namespace Hare
 
                     /* Bullet 3:  */
                     /*  test the 9 tests first (this was faster) */
-                    fex = Math.Abs(e0.x);
-                    fey = Math.Abs(e0.y);
-                    fez = Math.Abs(e0.z);
-                    if (!AXISTEST_X01(e0.z, e0.y, fez, fey)) continue;
-                    if (!AXISTEST_Y02(e0.z, e0.x, fez, fex)) continue;
-                    if (!AXISTEST_Z12(e0.y, e0.x, fey, fex)) continue;
+                    fex = Math.Abs(e0.dx);
+                    fey = Math.Abs(e0.dy);
+                    fez = Math.Abs(e0.dz);
+                    if (!AXISTEST_X01(e0.dz, e0.dy, fez, fey)) continue;
+                    if (!AXISTEST_Y02(e0.dz, e0.dx, fez, fex)) continue;
+                    if (!AXISTEST_Z12(e0.dy, e0.dx, fey, fex)) continue;
 
-                    fex = Math.Abs(e1.x);
-                    fey = Math.Abs(e1.y);
-                    fez = Math.Abs(e1.z);
-                    if (!AXISTEST_X01(e1.z, e1.y, fez, fey)) continue;
-                    if (!AXISTEST_Y02(e1.z, e1.x, fez, fex)) continue;
-                    if (!AXISTEST_Z0(e1.y, e1.x, fey, fex)) continue;
+                    fex = Math.Abs(e1.dx);
+                    fey = Math.Abs(e1.dy);
+                    fez = Math.Abs(e1.dz);
+                    if (!AXISTEST_X01(e1.dz, e1.dy, fez, fey)) continue;
+                    if (!AXISTEST_Y02(e1.dz, e1.dx, fez, fex)) continue;
+                    if (!AXISTEST_Z0(e1.dy, e1.dx, fey, fex)) continue;
 
-                    fex = Math.Abs(e2.x);
-                    fey = Math.Abs(e2.y);
-                    fez = Math.Abs(e2.z);
-                    if (!AXISTEST_X2(e2.z, e2.y, fez, fey)) continue;
-                    if (!AXISTEST_Y1(e2.z, e2.x, fez, fex)) continue;
-                    if (!AXISTEST_Z12(e2.y, e2.x, fey, fex)) continue;
+                    fex = Math.Abs(e2.dx);
+                    fey = Math.Abs(e2.dy);
+                    fez = Math.Abs(e2.dz);
+                    if (!AXISTEST_X2(e2.dz, e2.dy, fez, fey)) continue;
+                    if (!AXISTEST_Y1(e2.dz, e2.dx, fez, fex)) continue;
+                    if (!AXISTEST_Z12(e2.dy, e2.dx, fey, fex)) continue;
 
                     /* Bullet 1: */
                     /*  first test overlap in the {x,y,z}-directions */

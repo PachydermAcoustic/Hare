@@ -169,18 +169,18 @@ namespace Hare
 
                 Normal.Normalize();
 
-                diffz = new Vector(Normal.x, Normal.y, Normal.z);
+                diffz = new Vector(Normal.dx, Normal.dy, Normal.dz);
                 diffx = new Vector(0, 0, 1);
                 double proj = Math.Abs(Hare_math.Dot(diffz, diffx));
                 if (0.99 < proj && 1.01 > proj) diffx = new Vector(1, 0, 0);
-                diffy = new Vector(diffz.x, diffz.y, diffz.z);
+                diffy = new Vector(diffz.dx, diffz.dy, diffz.dz);
                 diffy = Hare_math.Cross(diffy, diffx);
                 diffx = Hare_math.Cross(diffy, diffz);
                 diffx.Normalize();
                 diffy.Normalize();
                 diffz.Normalize();
 
-                d = Hare_math.Dot(Normal, Points[0]);
+                d = Hare_math.Dot(Normal.dx, Normal.dy, Normal.dz, Points[0].x, Points[0].y, Points[0].z);
 
                 VertexCount = Points.Length;
                 Inv_Dot_Normal = 1 / (Hare_math.Dot(Normal, Normal));
@@ -381,6 +381,70 @@ namespace Hare
             /// <param name="u">u-value on triangle where an intersection point has been found (if any).</param>
             /// <param name="v">v-value on triangle where an intersection point has been found (if any).</param>
             /// <returns>True if an intersection was found, false if not.</returns>
+            protected bool RayXtri(Ray R, Point vert0, Point vert1, Point vert2, ref double t, ref double u, ref double v)
+            {
+
+                /* find vectors for two edges sharing vert0 */
+                Vector edge1 = vert1 - vert0;
+                Vector edge2 = vert2 - vert0;
+
+                /* begin calculating determinant - also used to calculate U parameter */
+                Vector pvec = Hare_math.Cross(R.dx, R.dy, R.dz, edge2.dx, edge2.dy, edge2.dz);
+
+                /* if determinant is near zero, ray lies in plane of triangle */
+                double det = Hare_math.Dot(edge1, pvec);
+
+                /* calculate distance from vert0 to ray origin */
+                double tvecx = R.x - vert0.x;
+                double tvecy = R.y - vert0.y;
+                double tvecz = R.z - vert0.z;
+                double invdet = 1.0 / det;
+
+                Vector qvec = Hare_math.Cross(tvecx, tvecy, tvecz, edge1.dx, edge1.dy, edge1.dz);
+
+                if (det > 0.000001)
+                {
+                    u = Hare_math.Dot(tvecx, tvecy, tvecz, pvec.dx, pvec.dy, pvec.dz);
+                    if (u < 0.0 || u > det)
+                        return false;
+
+                    /* calculate V parameter and test bounds */
+                    v = Hare_math.Dot(R.dx, R.dy, R.dz, qvec.dx, qvec.dy, qvec.dz);
+                    if (v < 0.0 || u + v > det)
+                        return false;
+                }
+                else if (det < -0.000001)
+                {
+                    /* calculate U parameter and test bounds */
+                    u = Hare_math.Dot(tvecx, tvecy, tvecz, pvec.dx, pvec.dy, pvec.dz);
+                    if (u > 0.0 || u < det)
+                        return false;
+                    /* calculate V parameter and test bounds */
+                    v = Hare_math.Dot(R.dx, R.dy, R.dz, qvec.dx, qvec.dy, qvec.dz);
+                    if (v > 0.0 || u + v < det)
+                        return false;
+                }
+                else return false;  /* ray is parallell to the plane of the triangle */
+
+                t = Hare_math.Dot(edge2, qvec) * invdet;
+                u *= invdet;
+                v *= invdet;
+
+                return true;
+            }
+
+            /// <summary>
+            /// Ray-Triangle intersection algorithm, based on the algorithm published by Tomas Akenine-Möller, May 2000
+            /// </summary>
+            /// <param name="orig">Ray origin point</param>
+            /// <param name="dir">Ray direction vector</param>
+            /// <param name="vert0">First triangle vertex</param>
+            /// <param name="vert1">Second triangle vertex</param>
+            /// <param name="vert2">Third triangle vertex</param>
+            /// <param name="t">t-value along ray where an intersection point has been found (if any).</param>
+            /// <param name="u">u-value on triangle where an intersection point has been found (if any).</param>
+            /// <param name="v">v-value on triangle where an intersection point has been found (if any).</param>
+            /// <returns>True if an intersection was found, false if not.</returns>
             protected bool RayXtri(Point orig, Vector dir, Point vert0, Point vert1, Point vert2, ref double t, ref double u, ref double v)
             {
 
@@ -438,7 +502,7 @@ namespace Hare
             /// <returns>The distance between a point and the plane of the polygon.</returns>
             public double DistToPlane(Point q) 
             {
-                return (Hare_math.Dot(Normal, q) - d) * Inv_Dot_Normal;
+                return (Hare_math.Dot(Normal.dx, Normal.dy, Normal.dz, q.x, q.y, q.z) - d) * Inv_Dot_Normal;
             }
 
             /// <summary>
@@ -454,13 +518,25 @@ namespace Hare
             }
 
             /// <summary>
+            /// Returns a boolean indicating which side of a polygon a ray is located on.
+            /// </summary>
+            /// <param name="Dir">A vector indicating the direction of the ray.</param>
+            /// <returns>True if the ray is on the correct side of the polygon to indicate an intersection point.</returns>
+            protected bool Ray_Side(double dx, double dy, double dz)
+            {
+                double n = Hare_math.Dot(dx, dy, dz, Normal.dx, Normal.dy, Normal.dz);
+                if (n < 0) { return false; }
+                return true;
+            }
+
+            /// <summary>
             /// Finds the closest point on the plane of a polygon from a specified point.
             /// </summary>
             /// <param name="q">The point to be compared.</param>
             /// <returns>The closest point on the plane.</returns>
             public Point ClosestPtPointPlane(Point q)
             {
-                double t = Hare_math.Dot(Normal, q) - d;
+                double t = Hare_math.Dot(Normal.dx, Normal.dy, Normal.dz, q.x, q.y, q.z) - d;
                 return q - (t * Normal);
             }
         }
@@ -486,19 +562,19 @@ namespace Hare
             {
                 u = 0; v = 0; t = 0;
                 bool Intersects;
-                if (Ray_Side(R.direction))
+                if (Ray_Side(R.dx, R.dy, R.dz))
                 {
-                    Intersects = RayXtri(R.origin, R.direction, P[0], P[1], P[2], ref t, ref u, ref v);
+                    Intersects = RayXtri(R, P[0], P[1], P[2], ref t, ref u, ref v);
                 }
                 else
                 {
-                    Intersects = RayXtri(R.origin, R.direction, P[2], P[1], P[0], ref t, ref u, ref v);
+                    Intersects = RayXtri(R, P[2], P[1], P[0], ref t, ref u, ref v);
                 }
 
                 if (Intersects)
                 {
                     //I = new X_Event(R.origin + R.direction * t, u, v, t, this.Poly_index);
-                    Xpt = R.origin + R.direction * t;
+                    Xpt = new Point(R.x + R.dx * t, R.y + R.dy * t, R.z + R.dz * t);
                     polyid = this.Poly_index;
                     return true;
                 }
@@ -522,7 +598,7 @@ namespace Hare
             {
                 Point p1 = triclosestpoint(0,1,2,p);
                 Vector p1p = p1 - p;
-                return p1p.x*p1p.x + p1p.y*p1p.y + p1p.z*p1p.z;
+                return p1p.dx*p1p.dx + p1p.dy*p1p.dy + p1p.dz*p1p.dz;
             }
         }
 
@@ -554,19 +630,19 @@ namespace Hare
             public override bool Intersect(Ray R, Point[] P, out Point Xpt, out double u, out double v, out double t, out int polyid)
             {
                 u = 0; v = 0; t = 0;
-                if (Ray_Side(R.direction))
+                if (Ray_Side(R.dx, R.dy, R.dz))
                 {
-                    if (RayXtri(R.origin, R.direction, P[0], P[1], P[2], ref t, ref u, ref v))
+                    if (RayXtri(R, P[0], P[1], P[2], ref t, ref u, ref v))
                     {
                         //I = new X_Event(R.origin + R.direction * t, u, v, t, this.Poly_index);
-                        Xpt = R.origin + R.direction * t;
+                        Xpt = new Point( R.x + R.dx * t, R.y + R.dy * t, R.z + R.dz * t) ;
                         polyid = this.Poly_index;
                         return true;
                     }
-                    else if (RayXtri(R.origin, R.direction, P[2], P[3], P[0], ref t, ref u, ref v))
+                    else if (RayXtri(R, P[2], P[3], P[0], ref t, ref u, ref v))
                     {
                         //I = new X_Event(R.origin + R.direction * t, u, v, t, this.Poly_index);
-                        Xpt = R.origin + R.direction * t;
+                        Xpt = new Point(R.x + R.dx * t, R.y + R.dy * t, R.z + R.dz * t);
                         polyid = this.Poly_index;
                         return true;
                     }
@@ -580,17 +656,17 @@ namespace Hare
                 }
                 else
                 {
-                    if (RayXtri(R.origin, R.direction, P[2], P[1], P[0], ref t, ref u, ref v))
+                    if (RayXtri(R, P[2], P[1], P[0], ref t, ref u, ref v))
                     {
                         //I = new X_Event(R.origin + R.direction * t, u, v, t, this.Poly_index);
-                        Xpt = R.origin + R.direction * t;
+                        Xpt = new Point(R.x + R.dx * t, R.y + R.dy * t, R.z + R.dz * t);
                         polyid = this.Poly_index;
                         return true;
                     }
-                    else if (RayXtri(R.origin, R.direction, P[0], P[3], P[2], ref t, ref u, ref v))
+                    else if (RayXtri(R, P[0], P[3], P[2], ref t, ref u, ref v))
                     {
                         //I = new X_Event(R.origin + R.direction * t, u, v, t, this.Poly_index);
-                        Xpt = R.origin + R.direction * t;
+                        Xpt = new Point(R.x + R.dx * t, R.y + R.dy * t, R.z + R.dz * t);
                         polyid = this.Poly_index;
                         return true;
                     }
@@ -608,12 +684,12 @@ namespace Hare
             {
                 Point p1 = triclosestpoint(0, 1, 2, p);
                 Vector p1p = p1 - p;
-                double p1ps = p1p.x * p1p.x + p1p.y * p1p.y + p1p.z * p1p.z;
+                double p1ps = p1p.dx * p1p.dx + p1p.dy * p1p.dy + p1p.dz * p1p.dz;
                 if(p1ps < 0.01) return p1ps;
 
                 Point p2 = triclosestpoint(0, 3, 2, p);
                 Vector p2p = p2 - p;
-                double p2ps = p2p.x * p2p.x + p2p.y * p2p.y + p2p.z * p2p.z;
+                double p2ps = p2p.dx * p2p.dx + p2p.dy * p2p.dy + p2p.dz * p2p.dz;
                 return Math.Min(p1ps, p2ps);
             }
 

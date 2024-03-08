@@ -72,7 +72,7 @@ namespace Hare
                     if ((Model[m].Min.z - 0.01) < MinPT.z) MinPT.z = (Model[m].Min.z - Epsilon);
                 }
 
-                OBox = new AABB(MinPT - new Point(.1, .1, .1), MaxPT + new Point(.1, .1, .1));
+                OBox = new AABB(MinPT.x - .1, MinPT.y - .1, MinPT.z - .1, MaxPT.x + .1, MaxPT.y + .1, MaxPT.z + .1);
 
                 VoxelCtX = Domain;
                 VoxelCtY = Domain;
@@ -82,7 +82,7 @@ namespace Hare
                 Voxels = new AABB[VoxelCtX, VoxelCtY, VoxelCtZ];
                 Voxel_Inv = new List<int>[VoxelCtX, VoxelCtY, VoxelCtZ, Model.Length];
 
-                BoxDims = (OBox.Max - OBox.Min);
+                BoxDims = new Point(OBox.Max.x - OBox.Min.x, OBox.Max.y - OBox.Min.y, OBox.Max.z - OBox.Min.z);
                 VoxelDims = new Point(BoxDims.x / VoxelCtX, BoxDims.y / VoxelCtY, BoxDims.z / VoxelCtZ);
                 VoxelDims_Inv = new Point(1 / VoxelDims.x, 1 / VoxelDims.y, 1 / VoxelDims.z);
                 BoxDims_Inv = new Point(1 / BoxDims.x, 1 / BoxDims.y, 1 / BoxDims.z);
@@ -153,13 +153,13 @@ namespace Hare
                     if ((Model[m].Min.z - 0.01) < MinPT.z) MinPT.z = (Model[m].Min.z - Epsilon);
                 }
 
-                OBox = new AABB(MinPT - new Point(.1, .1, .1), MaxPT + new Point(.1, .1, .1));
+                OBox = new AABB(MinPT.x - .1, MinPT.y - .1, MinPT.z - .1, MaxPT.x + .1, MaxPT.y + .1, MaxPT.z + .1);
 
                 Voxels = new AABB[1,1,1];
-                Voxels[0,0,0] = new AABB(MinPT - new Point(.1, .1, .1), MaxPT + new Point(.1, .1, .1));
+                Voxels[0,0,0] = new AABB(MinPT.x - .1, MinPT.y - .1, MinPT.z - .1, MaxPT.x + .1, MaxPT.y + .1, MaxPT.z + .1);
                 Voxel_Inv = new List<int>[1, 1, 1, Model.Length];
                 for (int i = 0; i < Model.Length; i++) Voxel_Inv[0, 0, 0, i] = new List<int>();
-                BoxDims = (OBox.Max - OBox.Min);
+                BoxDims = new Point(OBox.Max.x - OBox.Min.x, OBox.Max.y - OBox.Min.y, OBox.Max.z - OBox.Min.z);
 
                 for (int i = 0; i < Model.Length; i++)
                 {
@@ -426,9 +426,9 @@ namespace Hare
 
                 int X, Y, Z;
                 //Identify which voxel the Origin point is located in...
-                X = (int)Math.Floor((R.origin.x - OBox.Min.x) / VoxelDims.x);
-                Y = (int)Math.Floor((R.origin.y - OBox.Min.y) / VoxelDims.y);
-                Z = (int)Math.Floor((R.origin.z - OBox.Min.z) / VoxelDims.z);
+                X = (int)Math.Floor((R.x - OBox.Min.x) / VoxelDims.x);
+                Y = (int)Math.Floor((R.y - OBox.Min.y) / VoxelDims.y);
+                Z = (int)Math.Floor((R.z - OBox.Min.z) / VoxelDims.z);
 
                 double tDeltaX, tDeltaY, tDeltaZ;
                 double tMaxX = 0, tMaxY = 0, tMaxZ = 0;
@@ -438,60 +438,60 @@ namespace Hare
 
                 if (X < 0 || X >= VoxelCtX || Y < 0 || Y >= VoxelCtY || Z < 0 || Z >= VoxelCtZ) //return false;
                 {
-                    if (!OBox.Intersect(R, ref t_start, ref R.origin))
+                    if (!OBox.Intersect(ref R, ref t_start))
                     {
                         Ret_Event = new X_Event();
                         //reset_one(top_index, rayid);
                         return false;
                     }
-                    X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 1E-6) / VoxelDims.x);
-                    Y = (int)Math.Floor((R.origin.y - OBox.Min.y + R.direction.y * 1E-6) / VoxelDims.y);
-                    Z = (int)Math.Floor((R.origin.z - OBox.Min.z + R.direction.z * 1E-6) / VoxelDims.z);
+                    X = (int)Math.Floor((R.x - OBox.Min.x + R.dx * 1E-6) / VoxelDims.x);
+                    Y = (int)Math.Floor((R.y - OBox.Min.y + R.dy * 1E-6) / VoxelDims.y);
+                    Z = (int)Math.Floor((R.z - OBox.Min.z + R.dz * 1E-6) / VoxelDims.z);
                 }
 
-                if (R.direction.x < 0)
+                if (R.dx < 0)
                 {
                     OutX = -1;
                     stepX = -1;
-                    tMaxX = (Voxels[X, Y, Z].Min.x - R.origin.x) / R.direction.x;
-                    tDeltaX = VoxelDims.x / R.direction.x * stepX;
+                    tMaxX = (Voxels[X, Y, Z].Min.x - R.x) / R.dx;
+                    tDeltaX = VoxelDims.x / R.dx * stepX;
                 }
                 else
                 {
                     OutX = VoxelCtX;
                     stepX = 1;
-                    tMaxX = (Voxels[X, Y, Z].Max.x - R.origin.x) / R.direction.x;
-                    tDeltaX = VoxelDims.x / R.direction.x * stepX;
+                    tMaxX = (Voxels[X, Y, Z].Max.x - R.x) / R.dx;
+                    tDeltaX = VoxelDims.x / R.dx * stepX;
                 }
 
-                if (R.direction.y < 0)
+                if (R.dy < 0)
                 {
                     OutY = -1;
                     stepY = -1;
-                    tMaxY = (Voxels[X, Y, Z].Min.y - R.origin.y) / R.direction.y;
-                    tDeltaY = VoxelDims.y / R.direction.y * stepY;
+                    tMaxY = (Voxels[X, Y, Z].Min.y - R.y) / R.dy;
+                    tDeltaY = VoxelDims.y / R.dy * stepY;
                 }
                 else
                 {
                     OutY = VoxelCtY;
                     stepY = 1;
-                    tMaxY = (Voxels[X, Y, Z].Max.y - R.origin.y) / R.direction.y;
-                    tDeltaY = VoxelDims.y / R.direction.y * stepY;
+                    tMaxY = (Voxels[X, Y, Z].Max.y - R.y) / R.dy;
+                    tDeltaY = VoxelDims.y / R.dy * stepY;
                 }
 
-                if (R.direction.z < 0)
+                if (R.dz < 0)
                 {
                     OutZ = -1;
                     stepZ = -1;
-                    tMaxZ = (Voxels[X, Y, Z].Min.z - R.origin.z) / R.direction.z;
-                    tDeltaZ = VoxelDims.z / R.direction.z * stepZ;
+                    tMaxZ = (Voxels[X, Y, Z].Min.z - R.z) / R.dz;
+                    tDeltaZ = VoxelDims.z / R.dz * stepZ;
                 }
                 else
                 {
                     OutZ = VoxelCtZ;
                     stepZ = 1;
-                    tMaxZ = (Voxels[X, Y, Z].Max.z - R.origin.z) / R.direction.z;
-                    tDeltaZ = VoxelDims.z / R.direction.z * stepZ;
+                    tMaxZ = (Voxels[X, Y, Z].Max.z - R.z) / R.dz;
+                    tDeltaZ = VoxelDims.z / R.dz * stepZ;
                 }
 
                 List<Point> X_LIST = new List<Point>();
@@ -523,7 +523,7 @@ namespace Hare
 
                     for (int c = 0; c < X_LIST.Count; c++)
                     {
-                        if (this.Voxels[X, Y, Z].IsPointInBox(X_LIST[c]))
+                        if (this.Voxels[X, Y, Z].IsPointInBox(X_LIST[c].x, X_LIST[c].y, X_LIST[c].z))
                         {
                             int choice = c;
                             //Ret_Event = new X_Event(X_LIST[c], ulist[c], vlist[c], tlist[c], pidlist[c];
@@ -610,9 +610,9 @@ namespace Hare
 
                 int X, Y, Z;
                 //Identify which voxel the Origin point is located in...
-                X = (int)Math.Floor((R.origin.x - OBox.Min.x) / VoxelDims.x);
-                Y = (int)Math.Floor((R.origin.y - OBox.Min.y) / VoxelDims.y);
-                Z = (int)Math.Floor((R.origin.z - OBox.Min.z) / VoxelDims.z);
+                X = (int)Math.Floor((R.x - OBox.Min.x) / VoxelDims.x);
+                Y = (int)Math.Floor((R.y - OBox.Min.y) / VoxelDims.y);
+                Z = (int)Math.Floor((R.z - OBox.Min.z) / VoxelDims.z);
 
                 double tDeltaX, tDeltaY, tDeltaZ;
                 double tMaxX = 0, tMaxY = 0, tMaxZ = 0;
@@ -622,60 +622,60 @@ namespace Hare
 
                 if (X < 0 || X >= VoxelCtX || Y < 0 || Y >= VoxelCtY || Z < 0 || Z >= VoxelCtZ) //return false;
                 {
-                    if (!OBox.Intersect(R, ref t_start, ref R.origin))
+                    if (!OBox.Intersect(ref R, ref t_start))
                     {
                         Ret_Event = new X_Event();
                         //reset_one(top_index, rayid);
                         return false;
                     }
-                    X = (int)Math.Floor((R.origin.x - OBox.Min.x + R.direction.x * 1E-6) / VoxelDims.x);
-                    Y = (int)Math.Floor((R.origin.y - OBox.Min.y + R.direction.y * 1E-6) / VoxelDims.y);
-                    Z = (int)Math.Floor((R.origin.z - OBox.Min.z + R.direction.z * 1E-6) / VoxelDims.z);
+                    X = (int)Math.Floor((R.x - OBox.Min.x + R.dx * 1E-6) / VoxelDims.x);
+                    Y = (int)Math.Floor((R.y - OBox.Min.y + R.dy * 1E-6) / VoxelDims.y);
+                    Z = (int)Math.Floor((R.z - OBox.Min.z + R.dz * 1E-6) / VoxelDims.z);
                 }
 
-                if (R.direction.x < 0)
+                if (R.dx < 0)
                 {
                     OutX = -1;
                     stepX = -1;
-                    tMaxX = (Voxels[X, Y, Z].Min.x - R.origin.x) / R.direction.x;
-                    tDeltaX = VoxelDims.x / R.direction.x * stepX;
+                    tMaxX = (Voxels[X, Y, Z].Min.x - R.x) / R.dx;
+                    tDeltaX = VoxelDims.x / R.dx * stepX;
                 }
                 else
                 {
                     OutX = VoxelCtX;
                     stepX = 1;
-                    tMaxX = (Voxels[X, Y, Z].Max.x - R.origin.x) / R.direction.x;
-                    tDeltaX = VoxelDims.x / R.direction.x * stepX;
+                    tMaxX = (Voxels[X, Y, Z].Max.x - R.x) / R.dx;
+                    tDeltaX = VoxelDims.x / R.dx * stepX;
                 }
 
-                if (R.direction.y < 0)
+                if (R.dy < 0)
                 {
                     OutY = -1;
                     stepY = -1;
-                    tMaxY = (Voxels[X, Y, Z].Min.y - R.origin.y) / R.direction.y;
-                    tDeltaY = VoxelDims.y / R.direction.y * stepY;
+                    tMaxY = (Voxels[X, Y, Z].Min.y - R.y) / R.dy;
+                    tDeltaY = VoxelDims.y / R.dy * stepY;
                 }
                 else
                 {
                     OutY = VoxelCtY;
                     stepY = 1;
-                    tMaxY = (Voxels[X, Y, Z].Max.y - R.origin.y) / R.direction.y;
-                    tDeltaY = VoxelDims.y / R.direction.y * stepY;
+                    tMaxY = (Voxels[X, Y, Z].Max.y - R.y) / R.dy;
+                    tDeltaY = VoxelDims.y / R.dy * stepY;
                 }
 
-                if (R.direction.z < 0)
+                if (R.dz < 0)
                 {
                     OutZ = -1;
                     stepZ = -1;
-                    tMaxZ = (Voxels[X, Y, Z].Min.z - R.origin.z) / R.direction.z;
-                    tDeltaZ = VoxelDims.z / R.direction.z * stepZ;
+                    tMaxZ = (Voxels[X, Y, Z].Min.z - R.z) / R.dz;
+                    tDeltaZ = VoxelDims.z / R.dz * stepZ;
                 }
                 else
                 {
                     OutZ = VoxelCtZ;
                     stepZ = 1;
-                    tMaxZ = (Voxels[X, Y, Z].Max.z - R.origin.z) / R.direction.z;
-                    tDeltaZ = VoxelDims.z / R.direction.z * stepZ;
+                    tMaxZ = (Voxels[X, Y, Z].Max.z - R.z) / R.dz;
+                    tDeltaZ = VoxelDims.z / R.dz * stepZ;
                 }
 
                 List<Point> X_LIST = new List<Point>();
@@ -706,7 +706,7 @@ namespace Hare
 
                     for (int c = 0; c < X_LIST.Count; c++)
                     {
-                        if (this.Voxels[X, Y, Z].IsPointInBox(X_LIST[c]))
+                        if (this.Voxels[X, Y, Z].IsPointInBox(X_LIST[c].x, X_LIST[c].y, X_LIST[c].z))
                         {
                             int choice = c;
                             //Ret_Event = new X_Event(X_LIST[c], ulist[c], vlist[c], tlist[c], pidlist[c];

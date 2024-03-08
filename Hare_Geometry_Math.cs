@@ -14,6 +14,9 @@
 //'License along with this program; if not, write to the Free Software
 //'Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+using System;
+using System.Numerics;
+
 namespace Hare
     {
     namespace Geometry
@@ -33,6 +36,14 @@ namespace Hare
             {
                 return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
             }
+            public static double Dot(Vector a, Vector b)
+            {
+                return (a.dx * b.dx) + (a.dy * b.dy) + (a.dz * b.dz);
+            }
+            public static double Dot(double ax, double ay, double az, double bx, double by, double bz)
+            {
+                return (ax * bx) + (ay * by) + (az * bz);
+            }
 
             /// <summary>
             /// The cross product of 2 vectors.
@@ -46,12 +57,17 @@ namespace Hare
             }
             public static Vector Cross(Point a, Vector b)
             {
-                return new Vector(a.y * b.z - a.z * b.y, -(a.x * b.z - a.z * b.x), a.x * b.y - a.y * b.x);
+                return new Vector(a.y * b.dz - a.z * b.dy, -(a.x * b.dz - a.z * b.dx), a.x * b.dy - a.y * b.dx);
             }
             public static Vector Cross(Vector a, Vector b)
             {
-                return new Vector(a.y * b.z - a.z * b.y, -(a.x * b.z - a.z * b.x), a.x * b.y - a.y * b.x);
+                return new Vector(a.dy * b.dz - a.dz * b.dy, -(a.dx * b.dz - a.dz * b.dx), a.dx * b.dy - a.dy * b.dx);
             }
+            public static Vector Cross(double ax, double ay, double az, double bx, double by, double bz)
+            {
+                return new Vector(ay * bz - az * by, -(ax * bz - az * bx), ax * by - ay * bx);
+            }
+
 
             /// <summary>
             /// Dot(A, Cross(B, C))
@@ -60,9 +76,25 @@ namespace Hare
             /// <param name="B">Point or vector B...</param>
             /// <param name="C">Point or vector C...</param>
             /// <returns></returns>
-            public static double ScalarTriple(Point A, Point B, Point C)
+            public static double ScalarTriple(Vector A, Vector B, Vector C)
             {
                 return Dot(A, Cross(B, C));
+            }
+
+            public static double distance(double x1, double y1, double z1, double x2, double y2, double z2)
+            {
+                double dx = x2 - x1, dy = y2 - y1, dz = z2 - z1;
+                return Math.Sqrt(dx * dx + dy * dy + dz * dz);
+            }
+
+            public static void Normalize(ref double dx, ref double dy, ref double dz)
+            {
+                double factor = dx * dx + dy * dy + dz * dz;
+                if (factor == 0) return;
+                factor = Math.Sqrt(factor);
+                dx /= factor;
+                dy /= factor;
+                dz /= factor;
             }
         }
 

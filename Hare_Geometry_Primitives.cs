@@ -15,6 +15,8 @@
 //'Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 namespace Hare
 {
     namespace Geometry
@@ -22,16 +24,21 @@ namespace Hare
         /// <summary>
         /// Simple vector type variable, complete with certain common operators...
         /// </summary>
-        public class Vector : Point
+        public class Vector
         {
+            public double dx, dy, dz;
             public Vector(Point p)
-                :base(p.x, p.y, p.z)
             {
+                dx = p.x;
+                dy = p.y;
+                dz = p.z;
             }
 
             public Vector(double x_in, double y_in, double z_in)
-                : base(x_in, y_in, z_in)
             {
+                dx = x_in;
+                dy = y_in;
+                dz = z_in;
             }
 
             public Vector()
@@ -41,47 +48,80 @@ namespace Hare
 
             public void Normalize()
             {
-                double factor = x * x + y * y + z * z;
+                double factor = dx * dx + dy * dy + dz * dz;
                 if (factor == 0) return;
                 factor = Math.Sqrt(factor);
-                x /= factor;
-                y /= factor;
-                z /= factor;
+                dx /= factor;
+                dy /= factor;
+                dz /= factor;
             }
 
             public double Length()
             {
-                return Math.Sqrt(x * x + y * y + z * z);
+                return Math.Sqrt(dx * dx + dy * dy + dz * dz);
             }
 
             public static Point operator +(Vector P, Point Q)
             {
-                return new Point(P.x + Q.x, P.y + Q.y, P.z + Q.z);
+                return new Point(P.dx + Q.x, P.dy + Q.y, P.dz + Q.z);
             }
 
             public static Vector operator +(Vector P, Vector Q)
             {
-                return new Vector(P.x + Q.x, P.y + Q.y, P.z + Q.z);
+                return new Vector(P.dx + Q.dx, P.dy + Q.dy, P.dz + Q.dz);
             }
 
             public static Vector operator -(Vector P, Point Q)
             {
-                return new Vector(P.x - Q.x, P.y - Q.y, P.z - Q.z);
+                return new Vector(P.dx - Q.x, P.dy - Q.y, P.dz - Q.z);
+            }
+            public static Vector operator -(Vector P, Vector Q)
+            {
+                return new Vector(P.dx - Q.dx, P.dy - Q.dy, P.dz - Q.dz);
             }
 
             public static Vector operator *(Vector P, double Q)
             {
-                return new Vector(P.x * Q, P.y * Q, P.z * Q);
+                return new Vector(P.dx * Q, P.dy * Q, P.dz * Q);
             }
 
             public static Vector operator *(double Q, Vector P)
             {
-                return new Vector(P.x * Q, P.y * Q, P.z * Q);
+                return new Vector(P.dx * Q, P.dy * Q, P.dz * Q);
             }
 
             public static Vector operator /(Vector P, double Q)
             {
-                return new Vector(P.x / Q, P.y / Q, P.z / Q);
+                return new Vector(P.dx / Q, P.dy / Q, P.dz / Q);
+            }
+
+            /// <summary>
+            /// Access x(0), y(1), z(2) variables by integers. (ie. for use with integer based loops)
+            /// </summary>
+            /// <param name="i"> Integer indicating which variable to return. x(0) : y(1) : z(2) </param>
+            /// <returns> The double value of the variable. </returns>
+            public double byint(int i)
+            {
+                switch (i)
+                {
+                    case 0:
+                        return dx;
+                    case 1:
+                        return dy;
+                    case 2:
+                        return dz;
+                }
+                throw new Exception("Misrepresented Point-Dimension Index");
+            }
+
+            /// <summary>
+            /// Checks for a vector of infinitesimal length.
+            /// </summary>
+            /// <returns> True or False... </returns>
+            public bool IsZeroVector()
+            {
+                if ((dx * dx + dy * dy + dz * dz) < double.Epsilon) return true;
+                return false;
             }
         }
 
@@ -106,7 +146,7 @@ namespace Hare
                 y = y_in;
                 z = z_in;
 
-                code = (int)((((497 + x*1000) * 71 + y*1000) * 71) + z*1000);
+                code = (int)((((497 + x * 1000) * 71 + y * 1000) * 71) + z * 1000);
             }
 
             public Point()
@@ -123,10 +163,21 @@ namespace Hare
                 return new Point(P.x + Q.x, P.y + Q.y, P.z + Q.z);
             }
 
+            public static Point operator +(Point P, Vector Q)
+            {
+                return new Point(P.x + Q.dx, P.y + Q.dy, P.z + Q.dz);
+            }
+
             public static Vector operator -(Point P, Point Q)
             {
                 return new Vector(P.x - Q.x, P.y - Q.y, P.z - Q.z);
             }
+
+            public static Point operator -(Point P, Vector Q)
+            {
+                return new Point(P.x - Q.dx, P.y - Q.dy, P.z - Q.dz);
+            }
+
 
             public static Point operator *(Point P, double Q)
             {
@@ -199,25 +250,25 @@ namespace Hare
             }
         }
 
-        public class Vertex: Point
+        public class Vertex : Point
         {
             public int index;
             public System.Collections.Generic.List<Polygon> Polys = new System.Collections.Generic.List<Polygon>();
             public System.Collections.Generic.List<Edge> Edges = new System.Collections.Generic.List<Edge>();
 
             public Vertex(Point p, int id)
-                :base(p.x, p.y, p.z)
+                : base(p.x, p.y, p.z)
             {
                 index = id;
             }
 
             public Vertex(double x, double y, double z, int id)
-                :base(x, y, z)
+                : base(x, y, z)
             {
                 index = id;
             }
         }
-        
+
         public class Edge
         {
             public System.Collections.Generic.List<Polygon> Polys = new System.Collections.Generic.List<Polygon>();
@@ -227,7 +278,7 @@ namespace Hare
             Vertex[] pts = new Vertex[2];
             int code;
 
-            public Edge (Vertex a, Vertex b)
+            public Edge(Vertex a, Vertex b)
             {
                 pts[0] = a;
                 pts[1] = b;
@@ -249,11 +300,17 @@ namespace Hare
 
             public Hare.Geometry.Point closestpoint(Hare.Geometry.Point P)
             {
-                Hare.Geometry.Vector ab = b - a;
-                double t = Hare_math.Dot(P - a, ab) / Hare_math.Dot(ab, ab);
+                double abx = b.x - a.x;
+                double aby = b.y - a.y;
+                double abz = b.z - a.z;
+                double P_ax = P.x - a.x;
+                double P_ay = P.y - a.y;
+                double P_az = P.z - a.z;
+
+                double t = Hare_math.Dot(P_ax, P_ay,P_az, abx, aby, abz) / Hare_math.Dot(abx, aby, abz, abx, aby, abz);
                 //if (t < 0) t = 0;
                 //else if (t > 1) t = 1;
-                return a + t * ab;
+                return new Point(a.x + t * abx, a.y + t * aby, a.z + t * abz);
             }
 
             public Vertex a
@@ -300,7 +357,7 @@ namespace Hare
                 pt1.Hash2(mod, out h[0], out h[1]);
                 pt2.Hash2(mod, out h[2], out h[3]);
 
-                return (System.Int64)(h[0] + 5*h[1] + 11*h[2] + 17*h[3]);
+                return (System.Int64)(h[0] + 5 * h[1] + 11 * h[2] + 17 * h[3]);
             }
 
             public static int Hash(Point a, Point b)
@@ -329,26 +386,45 @@ namespace Hare
                 return hash;
             }
         }
-        
+
         /// <summary>
         /// A ray class storing all relevant data to accurately cast a ray.
         /// </summary>
         public class Ray
         {
+            public Ray(double x, double y, double z, double dx, double dy, double dz, int ThreadID_IN, int ID)
+            {
+                this.x = x; this.y = y; this.z = z; this.dx = dx; this.dy = dy; this.dz = dz;
+                ThreadID = ThreadID_IN; Ray_ID = ID;
+                //a = 0;
+            }
+
             public Ray(Point o, Vector d, int Thread_ID, int ID_IN)
             {
                 Ray_ID = ID_IN;
-                origin = o;
-                direction = d;
+                x = o.x;
+                y = o.y;
+                z = o.z;
+                dx = d.dx;
+                dy = d.dy;
+                dz = d.dz;
                 ThreadID = Thread_ID;
-                a = 0;
+                //a = 0;
             }
+
+            public void Reverse()
+            {
+                dx *= -1;
+                dy *= -1; 
+                dz *= -1;
+            }
+
             public int ThreadID;
-            public Point origin;
+            public double x, y, z;
+            public double dx, dy, dz;
             public int poly_origin1;
             public int poly_origin2;
-            public Vector direction;
-            public int a;
+            //public int a;
             public int Ray_ID;
         }
 
@@ -375,7 +451,7 @@ namespace Hare
                 Poly_id = Poly_index;
             }
 
-            public X_Event() 
+            public X_Event()
             {
                 u = 0;
                 v = 0;
@@ -404,16 +480,16 @@ namespace Hare
             }
         }
 
-        public class Plane 
+        public class Plane
         {
             double a, b, c, d;
             int code;
 
             public Plane(Polygon p)
             {
-                a = p.Normal.x;
-                b = p.Normal.y;
-                c = p.Normal.z;
+                a = p.Normal.dx;
+                b = p.Normal.dy;
+                c = p.Normal.dz;
                 d = -(a * p.Points[0].x + b * p.Points[0].y + c * p.Points[0].z);
 
                 //a = (float)(p.Points[0].y * (p.Points[1].z - p.Points[2].z) + p.Points[2].y * (p.Points[2].z - p.Points[0].z) + p.Points[2].y * (p.Points[0].z - p.Points[1].z));
@@ -429,7 +505,7 @@ namespace Hare
                     d *= -1;
                 }
 
-                code = (int)(((Math.Round(d,3).GetHashCode() * 7 + Math.Round(a,3).GetHashCode()) * 11 + Math.Round(b,3).GetHashCode()) * 17 + Math.Round(c,3).GetHashCode());
+                code = (int)(((Math.Round(d, 3).GetHashCode() * 7 + Math.Round(a, 3).GetHashCode()) * 11 + Math.Round(b, 3).GetHashCode()) * 17 + Math.Round(c, 3).GetHashCode());
             }
 
             public override int GetHashCode()
