@@ -51,7 +51,7 @@ namespace Hare
                 Model = Model_in;                
                 Point MaxPT = new Point(Double.NegativeInfinity, Double.NegativeInfinity, Double.NegativeInfinity);
                 Point MinPT = new Point(Double.PositiveInfinity, Double.PositiveInfinity, Double.PositiveInfinity);
-                Poly_Ray_ID = new int[Model.Length, 500][]; //bool[Model.Length, System.Environment.ProcessorCount][];
+                Poly_Ray_ID = new int[Model.Length, no_of_boxes][]; //bool[Model.Length, System.Environment.ProcessorCount][];
 
                 for (int i = 0; i < Model.Length; i++)
                 {
@@ -91,8 +91,8 @@ namespace Hare
                 
                 int processorCT = System.Environment.ProcessorCount;
 
-                System.Threading.Tasks.Parallel.For(0, Model.Length, m =>
-                //for (int m = 0; m < Model.Length; m++)
+                //System.Threading.Tasks.Parallel.For(0, Model.Length, m =>
+                for (int m = 0; m < Model.Length; m++)
                 {
                     System.Threading.Thread[] T_List = new System.Threading.Thread[processorCT];
                     for (int P_I = 0; P_I < processorCT; P_I++)
@@ -118,7 +118,7 @@ namespace Hare
                             }
                         }
                     } while (!finished);
-                });
+                }//);
             }
 
             /// <summary>

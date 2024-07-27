@@ -20,6 +20,9 @@
     <_MigrateToProjectGuid>34692c70-320f-4470-ae9c-323f6d3c9fc7</_MigrateToProjectGuid>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
+  <PropertyGroup>
+    <EnableSourceControlManagerQueries>true</EnableSourceControlManagerQueries>
+  </PropertyGroup>
   <!--<ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
       <Visible>False</Visible>
