@@ -40,9 +40,6 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>-->
-  <ItemGroup>
-    <Compile Remove="Octree.cs" />
-  </ItemGroup>
   <PropertyGroup>
     <AssemblyTitle>Hare</AssemblyTitle>
     <Description>Multi-Resolution Raytracing</Description>

@@ -1,6 +1,6 @@
 ﻿//'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
-//'Copyright (c) 2008 - 2024, Arthur van der Harten			
+//'Copyright (c) 2008 - 2025, Arthur van der Harten			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or
@@ -28,8 +28,8 @@ namespace Hare
             protected Point[] Bounds;
             protected internal Point Center;
             protected internal Vector Width;
-            protected Point Inv_Width;
-            protected Point halfwidth;
+            protected internal Point Inv_Width;
+            protected internal Point halfwidth;
 
             /// <summary>
             /// Bounding Box Constructor.

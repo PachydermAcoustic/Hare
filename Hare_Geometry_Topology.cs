@@ -1,6 +1,6 @@
 //'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
-//'Copyright (c) 2008 - 2024, Arthur van der Harten			
+//'Copyright (c) 2008 - 2025, Arthur van der Harten			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or
@@ -450,6 +450,15 @@ namespace Hare
             public bool intersect(int Poly_ID, Ray R, out Point P, out double u, out double v, out double t)
             {
                 return Polys[Poly_ID].Intersect(R, this.Polygon_Vertices(Poly_ID), out P, out u, out v, out t, out Poly_ID);
+            }
+
+            /// <summary>
+            /// High Performance check - Checks a ray for an intersection with a given polygon.
+            /// </summary>
+            /// <returns>true if ray intersects, false if not.</returns>
+            public bool intersect(int Poly_ID, ref Ray R, out double x, out double y, out double z, out double t)
+            {
+                return Polys[Poly_ID].Intersect(ref R, this.Polygon_Vertices(Poly_ID), out x, out y, out z, out t);
             }
 
             /// <summary>

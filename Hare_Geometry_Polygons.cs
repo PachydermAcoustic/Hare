@@ -1,6 +1,6 @@
 //'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
-//'Copyright (c) 2008 - 2024, Arthur van der Harten			
+//'Copyright (c) 2008 - 2025, Arthur van der Harten			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or
@@ -54,6 +54,7 @@ namespace Hare
             /// <param name="I">The </param>
             /// <returns></returns>
             public abstract bool Intersect(Ray R, Point[] P, out Point Xpt, out double u, out double v, out double t, out int polyid);
+            public abstract bool Intersect(ref Ray R, Point[] P, out double x, out double y, out double z, out double t);
             public abstract Point GetRandomPoint(double Rndx, double Rndy, double Side);
 
             public abstract double closestpoint(Point p);
@@ -434,6 +435,81 @@ namespace Hare
             }
 
             /// <summary>
+            /// High Performance - Ray-Triangle intersection algorithm, based on the algorithm published by Tomas Akenine-Möller, May 2000
+            /// </summary>
+            /// <param name="orig">Ray origin point</param>
+            /// <param name="dir">Ray direction vector</param>
+            /// <param name="vert0">First triangle vertex</param>
+            /// <param name="vert1">Second triangle vertex</param>
+            /// <param name="vert2">Third triangle vertex</param>
+            /// <param name="t">t-value along ray where an intersection point has been found (if any).</param>
+            /// <param name="u">u-value on triangle where an intersection point has been found (if any).</param>
+            /// <param name="v">v-value on triangle where an intersection point has been found (if any).</param>
+            /// <returns>True if an intersection was found, false if not.</returns>
+            protected bool RayXtri(ref Ray R, ref Point vert0, ref Point vert1, ref Point vert2, ref double t)
+            {
+                /* find vectors for two edges sharing vert0 */
+                double edge1x = vert1.x - vert0.x;
+                double edge1y = vert1.y - vert0.y;
+                double edge1z = vert1.z - vert0.z;
+                double edge2x = vert2.x - vert0.x;
+                double edge2y = vert2.y - vert0.y;
+                double edge2z = vert2.z - vert0.z;
+
+                double u, v;
+
+                /* begin calculating determinant - also used to calculate U parameter */
+                //double pvecx, pvecy, pvecz;
+                //Hare_math.Cross(R.dx, R.dy, R.dz, edge2x, edge2y, edge2z, out pvecx, out pvecy, out pvecz);
+                double pvecx = R.dy * edge2z - R.dz * edge2y;
+                double pvecy = R.dz * edge2x - R.dx * edge2z;
+                double pvecz = R.dx * edge2y - R.dy * edge2x;
+
+                /* if determinant is near zero, ray lies in plane of triangle */
+                double det = Hare_math.Dot(edge1x, edge1y, edge1z, pvecx, pvecy, pvecz);
+
+                /* calculate distance from vert0 to ray origin */
+                double tvecx = R.x - vert0.x;
+                double tvecy = R.y - vert0.y;
+                double tvecz = R.z - vert0.z;
+                double invdet = 1.0 / det;
+
+                //double qvecx, qvecy, qvecz;
+                //Hare_math.Cross(tvecx, tvecy, tvecz, edge1x, edge1y, edge1z, out qvecx, out qvecy, out qvecz);
+                double qvecx = tvecy * edge1z - tvecz * edge1y;
+                double qvecy = tvecz * edge1x - tvecx * edge1z;
+                double qvecz = tvecx * edge1y - tvecy * edge1x;
+
+                if (det > 0.000001)
+                {
+                    u = Hare_math.Dot(tvecx, tvecy, tvecz, pvecx, pvecy, pvecz);
+                    if (u < 0.0 || u > det)
+                        return false;
+
+                    /* calculate V parameter and test bounds */
+                    v = Hare_math.Dot(R.dx, R.dy, R.dz, qvecx, qvecy, qvecz);
+                    if (v < 0.0 || u + v > det)
+                        return false;
+                }
+                else if (det < -0.000001)
+                {
+                    /* calculate U parameter and test bounds */
+                    u = Hare_math.Dot(tvecx, tvecy, tvecz, pvecx, pvecy, pvecz);
+                    if (u > 0.0 || u < det)
+                        return false;
+                    /* calculate V parameter and test bounds */
+                    v = Hare_math.Dot(R.dx, R.dy, R.dz, qvecx, qvecy, qvecz);
+                    if (v > 0.0 || u + v < det)
+                        return false;
+                }
+                else return false;  /* ray is parallell to the plane of the triangle */
+
+                t = Hare_math.Dot(edge2x, edge2y, edge2z, qvecx, qvecy, qvecz) * invdet;
+
+                return true;
+            }
+
+            /// <summary>
             /// Ray-Triangle intersection algorithm, based on the algorithm published by Tomas Akenine-Möller, May 2000
             /// </summary>
             /// <param name="orig">Ray origin point</param>
@@ -558,6 +634,31 @@ namespace Hare
                 if (VertexCount != 3) throw new ApplicationException("Faulty Triangle");
             }
 
+            public override bool Intersect(ref Ray R, Point[] P, out double x, out double y, out double z, out double t)
+            {
+                t = 0;
+                bool Intersects;
+                if (Ray_Side(R.dx, R.dy, R.dz))
+                {
+                    Intersects = RayXtri(ref R, ref P[0], ref P[1], ref P[2], ref t);
+                }
+                else
+                {
+                    Intersects = RayXtri(ref R, ref P[2], ref P[1], ref P[0], ref t);
+                }
+
+                if (Intersects)
+                {
+                    x = R.x + R.dx * t; y = R.y + R.dy * t; z = R.z + R.dz * t;
+                    return true;
+                }
+                else
+                {
+                    x = 0; y = 0; z = 0;
+                    return false;
+                }
+            }
+
             public override bool Intersect(Ray R, Point[] P, out Point Xpt, out double u, out double v, out double t, out int polyid)
             {
                 u = 0; v = 0; t = 0;
@@ -680,6 +781,47 @@ namespace Hare
                 }
             }
 
+            public override bool Intersect(ref Ray R, Point[] P, out double x, out double y, out double z, out double t)
+            {
+                t = 0;
+                if (Ray_Side(R.dx, R.dy, R.dz))
+                {
+                    if (RayXtri(ref R, ref P[0], ref P[1], ref P[2], ref t))
+                    {
+                        x = R.x + R.dx * t; y = R.y + R.dy * t; z = R.z + R.dz * t;
+                        return true;
+                    }
+                    else if (RayXtri(ref R, ref P[2], ref P[3], ref P[0], ref t))
+                    {
+                        x = R.x + R.dx * t; y = R.y + R.dy * t; z = R.z + R.dz * t;
+                        return true;
+                    }
+                    else
+                    {
+                        x = 0; y = 0; z = 0;
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (RayXtri(ref R, ref P[2], ref P[1], ref P[0], ref t))
+                    {
+                        x = R.x + R.dx * t; y = R.y + R.dy * t; z = R.z + R.dz * t;
+                        return true;
+                    }
+                    else if (RayXtri(ref R, ref P[0], ref P[3], ref P[2], ref t))
+                    {
+                        x = R.x + R.dx * t; y = R.y + R.dy * t; z = R.z + R.dz * t;
+                        return true;
+                    }
+                    else
+                    {
+                        x = 0; y = 0; z = 0;
+                        return false;
+                    }
+                }
+            }
+
             public override double closestpoint(Point p)
             {
                 Point p1 = triclosestpoint(0, 1, 2, p);
@@ -735,6 +877,15 @@ namespace Hare
                 v = 0;
                 t = 0;
                 polyid = Poly_index;
+                return true;
+            }
+
+            public override bool Intersect(ref Ray R, Point[] P, out double x, out double y, out double z, out double t)
+            {
+                x = 0;
+                y = 0;
+                z = 0;
+                t = 0;
                 return true;
             }
 

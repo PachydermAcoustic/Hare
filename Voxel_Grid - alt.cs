@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 
 namespace Hare
 {
@@ -24,7 +25,7 @@ namespace Hare
         /// <summary>
         /// Concept based on Amanatides Fast Ray-Voxel Traversal Algorithm.
         /// </summary>
-        public class Voxel_Grid : Spatial_Partition
+        public class Voxel_Grid_Adaptive : Spatial_Partition
         {
             public int[,][] Poly_Ray_ID;
             protected int VoxelCtX, VoxelCtY, VoxelCtZ;
@@ -40,12 +41,13 @@ namespace Hare
             protected int XYTot;
             uint rayno = 0;
             object ctlock = new object();
+            UInt16[,,] Xpos_step, Ypos_step, Zpos_step, Xneg_step, Yneg_step, Zneg_step;
 
             /// <summary>
             /// The voxel grid constructor. Concept based on Amanatides Fast Ray-Voxel Traversal Algorithm.
             /// </summary>
             /// <param name="Model_in"> The array of Topology to be entered into the Voxel Grid. For a single topology, enter an array with a single topology.</param> 
-            public Voxel_Grid(Topology[] Model_in, int Domain)
+            public Voxel_Grid_Adaptive(Topology[] Model_in, int Domain)
             {
                 //Initialize all variables
                 Model = Model_in;                
@@ -125,7 +127,7 @@ namespace Hare
             /// </summary>
             /// <param name="Model_in"></param>
             /// <param name="MaxDomain"></param>
-            public Voxel_Grid(Topology[] Model_in, int MaxDomain, int Avg_polys)
+            public Voxel_Grid_Adaptive(Topology[] Model_in, int MaxDomain, int Avg_polys)
             {
                 //Initialize all variables
                 Model = Model_in;
@@ -165,6 +167,21 @@ namespace Hare
                     for (int j = 0; j < Model[i].Polygon_Count; j++) Voxel_Inv[0, 0, 0, i].Add(j);
                 }
 
+                UInt16[,,] temp_Xpstep, temp_Ypstep, temp_Zpstep, temp_Xnstep, temp_Ynstep, temp_Znstep;
+                Xpos_step = new UInt16[1,1,1];
+                Ypos_step = new UInt16[1,1,1];
+                Zpos_step = new UInt16[1,1,1];
+                Xneg_step = new UInt16[1,1,1];
+                Yneg_step = new UInt16[1,1,1];
+                Zneg_step = new UInt16[1,1,1];
+
+                Xpos_step[0, 0, 0] = 1;
+                Ypos_step[0, 0, 0] = 1;
+                Zpos_step[0, 0, 0] = 1;
+                Xneg_step[0, 0, 0] = 1;
+                Yneg_step[0, 0, 0] = 1;
+                Zneg_step[0, 0, 0] = 1;
+
                 //Continuously subdivide voxels until either MaxDomain is reached, or the average number of polygons per voxel is reduced to the goal number...
                 for (int k = 0; k < MaxDomain; k++)
                 {
@@ -175,6 +192,15 @@ namespace Hare
 
                     AABB[,,] Voxels_temp = new AABB[VoxelCtX, VoxelCtY, VoxelCtZ];
                     List<int>[,,,] Voxel_Inv_temp = new List<int>[VoxelCtX, VoxelCtY, VoxelCtZ, Model.Length];
+                    ///Account of skippable voxels
+                    temp_Xpstep = new UInt16[VoxelCtX, VoxelCtY, VoxelCtZ];
+                    temp_Ypstep = new UInt16[VoxelCtX, VoxelCtY, VoxelCtZ];
+                    temp_Zpstep = new UInt16[VoxelCtX, VoxelCtY, VoxelCtZ];
+                    temp_Xnstep = new UInt16[VoxelCtX, VoxelCtY, VoxelCtZ];
+                    temp_Ynstep = new UInt16[VoxelCtX, VoxelCtY, VoxelCtZ];
+                    temp_Znstep = new UInt16[VoxelCtX, VoxelCtY, VoxelCtZ];
+
+                    ///
 
                     VoxelDims = new Point(BoxDims.x / VoxelCtX, BoxDims.y / VoxelCtY, BoxDims.z / VoxelCtZ);
                     VoxelDims_Inv = new Point(1 / VoxelDims.x, 1 / VoxelDims.y, 1 / VoxelDims.z);
@@ -192,7 +218,7 @@ namespace Hare
                             ThreadParams T_ = new ThreadParams(P_I * VoxelCtX / processorCT, (P_I + 1) * VoxelCtX / processorCT, P_I, m);
                             System.Threading.ParameterizedThreadStart TS = new System.Threading.ParameterizedThreadStart(delegate(object T)
                                 {
-                                   ThreadParams Tp = (ThreadParams)T;
+                                    ThreadParams Tp = (ThreadParams)T;
                                     for (int x = Tp.startvoxel; x < Tp.endvoxel; x++)
                                     {
                                         for (int y = 0; y < VoxelCtY; y++)
@@ -213,6 +239,17 @@ namespace Hare
                                                         Voxel_Inv_temp[x, y, z, Tp.m].Add(i);
                                                     }
                                                 }
+                                                if (Voxel_Inv_temp[x, y, z, Tp.m].Count != 0) { temp_Xpstep[x, y, z] = Xpos_step[x_prev, y_prev, z_prev]; temp_Ypstep[x,y,z] = Ypos_step[x_prev, y_prev, z_prev]; temp_Zpstep[x, y, z] = Zpos_step[x_prev, y_prev, z_prev]; temp_Xnstep[x, y, z] = Xneg_step[x_prev, y_prev, z_prev]; temp_Ynstep[x,y,z] = Yneg_step[x_prev, y_prev, z_prev]; temp_Znstep[x, y, z] = Zneg_step[x_prev, y_prev, z_prev]; }
+                                                else
+                                                {
+                                                    temp_Xpstep[x, y, z] = (UInt16)(Xpos_step[x_prev, y_prev, z_prev] + x % 2);
+                                                    temp_Ypstep[x, y, z] = (UInt16)(Ypos_step[x_prev, y_prev, z_prev] + y % 2);
+                                                    temp_Zpstep[x, y, z] = (UInt16)(Zpos_step[x_prev, y_prev, z_prev] + z % 2);
+                                                    temp_Xnstep[x, y, z] = (UInt16)(Xneg_step[x_prev, y_prev, z_prev] - ((x % 2) - 1));
+                                                    temp_Ynstep[x, y, z] = (UInt16)(Yneg_step[x_prev, y_prev, z_prev] - ((y % 2) - 1));
+                                                    temp_Znstep[x, y, z] = (UInt16)(Zneg_step[x_prev, y_prev, z_prev] + ((z % 2) - 1));
+                                                }
+
                                                 //Check for Null Voxels
                                                 if (Voxel_Inv_temp[x, y, z, Tp.m] == null)
                                                 {
@@ -242,7 +279,14 @@ namespace Hare
                             }
                         } while (!finished);
                     }
-
+                    //////////////////////
+                    Xpos_step = temp_Xpstep;
+                    Ypos_step = temp_Ypstep;
+                    Zpos_step = temp_Zpstep;
+                    Xneg_step = temp_Xnstep;
+                    Yneg_step = temp_Ynstep;
+                    Zneg_step = temp_Znstep;
+                    //////////////////////
                     Voxels = Voxels_temp;
                     Voxel_Inv = Voxel_Inv_temp;
 
@@ -364,7 +408,9 @@ namespace Hare
                 int stepX, stepY, stepZ, OutX, OutY, OutZ;
                 double t_start = 0;
 
-                if (X < 0 || X >= VoxelCtX || Y < 0 || Y >= VoxelCtY || Z < 0 || Z >= VoxelCtZ) //return false;
+                UInt16[,,] xskip, yskip, zskip;
+
+                if (X < 0 || X >= VoxelCtX || Y < 0 || Y >= VoxelCtY || Z < 0 || Z >= VoxelCtZ)
                 {
                     if (!OBox.Intersect(ref R, ref t_start))
                     {
@@ -374,6 +420,7 @@ namespace Hare
                     X = (int)Math.Floor((R.x - OBox.Min.x + R.dx * 1E-6) / VoxelDims.x);
                     Y = (int)Math.Floor((R.y - OBox.Min.y + R.dy * 1E-6) / VoxelDims.y);
                     Z = (int)Math.Floor((R.z - OBox.Min.z + R.dz * 1E-6) / VoxelDims.z);
+
                 }
 
                 if (R.dx < 0)
@@ -382,6 +429,7 @@ namespace Hare
                     stepX = -1;
                     tMaxX = (Voxels[X, Y, Z].Min.x - R.x) / R.dx;
                     tDeltaX = VoxelDims.x / R.dx * stepX;
+                    xskip = Xneg_step;
                 }
                 else
                 {
@@ -389,6 +437,7 @@ namespace Hare
                     stepX = 1;
                     tMaxX = (Voxels[X, Y, Z].Max.x - R.x) / R.dx;
                     tDeltaX = VoxelDims.x / R.dx * stepX;
+                    xskip = Xpos_step;
                 }
 
                 if (R.dy < 0)
@@ -397,6 +446,7 @@ namespace Hare
                     stepY = -1;
                     tMaxY = (Voxels[X, Y, Z].Min.y - R.y) / R.dy;
                     tDeltaY = VoxelDims.y / R.dy * stepY;
+                    yskip = Yneg_step;
                 }
                 else
                 {
@@ -404,6 +454,7 @@ namespace Hare
                     stepY = 1;
                     tMaxY = (Voxels[X, Y, Z].Max.y - R.y) / R.dy;
                     tDeltaY = VoxelDims.y / R.dy * stepY;
+                    yskip = Ypos_step;
                 }
 
                 if (R.dz < 0)
@@ -412,6 +463,7 @@ namespace Hare
                     stepZ = -1;
                     tMaxZ = (Voxels[X, Y, Z].Min.z - R.z) / R.dz;
                     tDeltaZ = VoxelDims.z / R.dz * stepZ;
+                    zskip = Zneg_step;
                 }
                 else
                 {
@@ -419,58 +471,103 @@ namespace Hare
                     stepZ = 1;
                     tMaxZ = (Voxels[X, Y, Z].Max.z - R.z) / R.dz;
                     tDeltaZ = VoxelDims.z / R.dz * stepZ;
+                    zskip = Zpos_step;
                 }
 
-                //List<Point> X_LIST = new List<Point>();
-                //List<double> ulist = new List<double>();
-                //List<double> vlist = new List<double>();
-                //List<double> tlist = new List<double>();
-                //List<int> pidlist = new List<int>();
-
-                //while (true)
-                //{
-                //    //Check all polygons in the current voxel...
-                //    foreach (int i in Voxel_Inv[X, Y, Z, top_index])
-                //    {
-                //        if (i == poly_origin1 || i == poly_origin2) continue;
-                //        if (Poly_Ray_ID[top_index, rayid][i] != R.Ray_ID)
-                //        {
-                //            Poly_Ray_ID[top_index, rayid][i] = R.Ray_ID;
-                //            Point Pt; double u = 0, v = 0, t = 0;
-                //            if (Model[top_index].intersect(i, R, out Pt, out u, out v, out t) && t > 0.0000000001)
-                //            {
-                //                X_LIST.Add(Pt);
-                //                ulist.Add(u);
-                //                vlist.Add(v);
-                //                tlist.Add(t);
-                //                pidlist.Add(i);
-                //            }
-                //        }
-                //    }
-
-                //    for (int c = 0; c < X_LIST.Count; c++)
-                //    {
-                //        if (this.Voxels[X, Y, Z].IsPointInBox(X_LIST[c].x, X_LIST[c].y, X_LIST[c].z))
-                //        {
-                //            int choice = c;
-                //            for (int s = c + 1; s < X_LIST.Count; s++)
-                //            {
-                //                if (tlist[s] < tlist[choice])
-                //                {
-                //                    choice = s;
-                //                }
-                //            }
-                //            Ret_Event = new X_Event(X_LIST[choice], ulist[choice], vlist[choice], tlist[choice] + t_start, pidlist[choice]);
-                //            return true;
-                //        }
-                //    }
-
-                Point Xpt = null;
-                double umin = 0, vmin = 0, tmin = double.MaxValue;
-                int pid = -1;
+                List<Point> X_LIST = new List<Point>();
+                List<double> ulist = new List<double>();
+                List<double> vlist = new List<double>();
+                List<double> tlist = new List<double>();
+                List<int> pidlist = new List<int>();
 
                 while (true)
                 {
+                    ////////////////////////////////
+                    if (Voxel_Inv[X, Y, Z, top_index].Count == 0)
+                    {
+                        //In an empty node...
+                        //relocate start voxel:
+                        double tx = tMaxX + tDeltaX * xskip[X, Y, Z];
+                        double ty = tMaxY + tDeltaY * yskip[X, Y, Z];
+                        double tz = tMaxZ + tDeltaZ * zskip[X, Y, Z];
+
+                        if (tx < ty)
+                        {
+                            if (tx < tz)
+                            {
+                                X += xskip[X, Y, Z];
+                                if (X < 0 || X >= VoxelCtX)
+                                {
+                                    Ret_Event = new X_Event();
+                                    return false; /* outside grid */
+                                }
+                                tMaxX = tx;
+                                ty = tDeltaY * (xskip[X, Y, Z] - 1);
+                                tz = tDeltaZ * (xskip[X, Y, Z] - 1);
+                                tMaxY += ty;
+                                tMaxZ += tz;
+                                X += xskip[X, Y, Z] * stepX;
+                                Y += (UInt16)Math.Floor(ty / tDeltaY) * stepY;
+                                Z += (UInt16)Math.Floor(tz / tDeltaZ) * stepZ;
+                            }
+                            else
+                            {
+                                Z += zskip[X, Y, Z];
+                                if (Z < 0 || Z >= VoxelCtZ)
+                                {
+                                    Ret_Event = new X_Event();
+                                    return false; /* outside grid */
+                                }
+                                tMaxZ = tz;
+                                tx = tDeltaX * (zskip[X, Y, Z] - 1);
+                                ty = tDeltaY * (zskip[X, Y, Z] - 1);
+                                tMaxX += tx;
+                                tMaxY += ty;
+                                Z += zskip[X, Y, Z] * stepZ;
+                                X += (UInt16)Math.Floor(tx / tDeltaX) * stepX;
+                                Y += (UInt16)Math.Floor(ty / tDeltaY) * stepY;
+                            }
+                        }
+                        else
+                        {
+                            if (ty < tz)
+                            {
+                                Y += yskip[X, Y, Z];
+                                if (Y < 0 || Y >= VoxelCtY)
+                                {
+                                    Ret_Event = new X_Event();
+                                    return false; /* outside grid */
+                                }
+                                tMaxY = ty;
+                                tx = tDeltaX * (yskip[X, Y, Z] - 1);
+                                tz = tDeltaZ * (yskip[X, Y, Z] - 1);
+                                tMaxX += tx;
+                                tMaxZ += tz;
+                                Y += yskip[X, Y, Z] * stepY;
+                                X += (UInt16)Math.Floor(tx / tDeltaX) * stepX;
+                                Z += (UInt16)Math.Floor(tz / tDeltaZ) * stepZ;
+                            }
+                            else
+                            {
+                                Z += zskip[X, Y, Z];
+                                if (Z < 0 || Z >= VoxelCtZ)
+                                {
+                                    Ret_Event = new X_Event();
+                                    return false; /* outside grid */
+                                }
+                                tMaxZ = tz;
+                                tx = tDeltaX * (zskip[X, Y, Z] - 1);
+                                ty = tDeltaY * (zskip[X, Y, Z] - 1);
+                                tMaxX += tx;
+                                tMaxY += ty;
+                                Z += zskip[X, Y, Z] * stepZ;
+                                X += (UInt16)Math.Floor(tx / tDeltaX) * stepX;
+                                Y += (UInt16)Math.Floor(ty / tDeltaY) * stepY;
+                            }
+                        }
+                    }
+                    ////////////////////////////////
+
                     //Check all polygons in the current voxel...
                     foreach (int i in Voxel_Inv[X, Y, Z, top_index])
                     {
@@ -478,25 +575,33 @@ namespace Hare
                         if (Poly_Ray_ID[top_index, rayid][i] != R.Ray_ID)
                         {
                             Poly_Ray_ID[top_index, rayid][i] = R.Ray_ID;
-                            double x, y, z, t;
-                            if (Model[top_index].intersect(i, ref R, out x, out y, out z, out t) && t > 0.0000000001)
+                            Point Pt; double u = 0, v = 0, t = 0;
+                            if (Model[top_index].intersect(i, R, out Pt, out u, out v, out t) && t > 0.0000000001)
                             {
-                                if (t < tmin)
-                                {
-                                    Xpt = new Point(x, y, z);
-                                    umin = 0;
-                                    vmin = 0;
-                                    tmin = t;
-                                    pid = i;
-                                }
+                                X_LIST.Add(Pt);
+                                ulist.Add(u);
+                                vlist.Add(v);
+                                tlist.Add(t);
+                                pidlist.Add(i);
                             }
                         }
                     }
 
-                    if (Xpt != null && this.Voxels[X, Y, Z].IsPointInBox(Xpt.x, Xpt.y, Xpt.z))
+                    for (int c = 0; c < X_LIST.Count; c++)
                     {
-                        Ret_Event = new X_Event(Xpt, umin, vmin, tmin + t_start, pid);
-                        return true;
+                        if (this.Voxels[X, Y, Z].IsPointInBox(X_LIST[c].x, X_LIST[c].y, X_LIST[c].z))
+                        {
+                            int choice = c;
+                            for (int s = c + 1; s < X_LIST.Count; s++)
+                            {
+                                if (tlist[s] < tlist[choice])
+                                {
+                                    choice = s;
+                                }
+                            }
+                            Ret_Event = new X_Event(X_LIST[choice], ulist[choice], vlist[choice], tlist[choice] + t_start, pidlist[choice]);
+                            return true;
+                        }
                     }
 
                     //Find the Next Voxel...                    
@@ -560,205 +665,173 @@ namespace Hare
             /// <returns> Indicates whether or not an intersection was found. </returns>
             public override bool Shoot(Ray R, int top_index, out X_Event Ret_Event)
             {
-                uint rayid = assign_id();
-
-                int X, Y, Z;
-                //Identify which voxel the Origin point is located in...
-                X = (int)Math.Floor((R.x - OBox.Min.x) / VoxelDims.x);
-                Y = (int)Math.Floor((R.y - OBox.Min.y) / VoxelDims.y);
-                Z = (int)Math.Floor((R.z - OBox.Min.z) / VoxelDims.z);
-
-                double tDeltaX, tDeltaY, tDeltaZ;
-                double tMaxX = 0, tMaxY = 0, tMaxZ = 0;
-
-                int stepX, stepY, stepZ, OutX, OutY, OutZ;
-                double t_start = 0;
-
-                if (X < 0 || X >= VoxelCtX || Y < 0 || Y >= VoxelCtY || Z < 0 || Z >= VoxelCtZ) //return false;
-                {
-                    if (!OBox.Intersect(ref R, ref t_start))
-                    {
-                        Ret_Event = new X_Event();
-                        return false;
-                    }
-                    X = (int)Math.Floor((R.x - OBox.Min.x + R.dx * 1E-6) / VoxelDims.x);
-                    Y = (int)Math.Floor((R.y - OBox.Min.y + R.dy * 1E-6) / VoxelDims.y);
-                    Z = (int)Math.Floor((R.z - OBox.Min.z + R.dz * 1E-6) / VoxelDims.z);
-                }
-
-                if (R.dx < 0)
-                {
-                    OutX = -1;
-                    stepX = -1;
-                    tMaxX = (Voxels[X, Y, Z].Min.x - R.x) / R.dx;
-                    tDeltaX = VoxelDims.x / R.dx * stepX;
-                }
-                else
-                {
-                    OutX = VoxelCtX;
-                    stepX = 1;
-                    tMaxX = (Voxels[X, Y, Z].Max.x - R.x) / R.dx;
-                    tDeltaX = VoxelDims.x / R.dx * stepX;
-                }
-
-                if (R.dy < 0)
-                {
-                    OutY = -1;
-                    stepY = -1;
-                    tMaxY = (Voxels[X, Y, Z].Min.y - R.y) / R.dy;
-                    tDeltaY = VoxelDims.y / R.dy * stepY;
-                }
-                else
-                {
-                    OutY = VoxelCtY;
-                    stepY = 1;
-                    tMaxY = (Voxels[X, Y, Z].Max.y - R.y) / R.dy;
-                    tDeltaY = VoxelDims.y / R.dy * stepY;
-                }
-
-                if (R.dz < 0)
-                {
-                    OutZ = -1;
-                    stepZ = -1;
-                    tMaxZ = (Voxels[X, Y, Z].Min.z - R.z) / R.dz;
-                    tDeltaZ = VoxelDims.z / R.dz * stepZ;
-                }
-                else
-                {
-                    OutZ = VoxelCtZ;
-                    stepZ = 1;
-                    tMaxZ = (Voxels[X, Y, Z].Max.z - R.z) / R.dz;
-                    tDeltaZ = VoxelDims.z / R.dz * stepZ;
-                }
-
-                //List<Point> X_LIST = new List<Point>();
-                //List<double> ulist = new List<double>();
-                //List<double> vlist = new List<double>();
-                //List<double> tlist = new List<double>();
-                //List<int> pidlist = new List<int>();
-
-                //while (true)
-                //{
-                //    //Check all polygons in the current voxel...
-                //    foreach (int i in Voxel_Inv[X, Y, Z, top_index])
-                //    {
-                //        if (i == poly_origin1 || i == poly_origin2) continue;
-                //        if (Poly_Ray_ID[top_index, rayid][i] != R.Ray_ID)
-                //        {
-                //            Poly_Ray_ID[top_index, rayid][i] = R.Ray_ID;
-                //            Point Pt; double u = 0, v = 0, t = 0;
-                //            if (Model[top_index].intersect(i, R, out Pt, out u, out v, out t) && t > 0.0000000001)
-                //            {
-                //                X_LIST.Add(Pt);
-                //                ulist.Add(u);
-                //                vlist.Add(v);
-                //                tlist.Add(t);
-                //                pidlist.Add(i);
-                //            }
-                //        }
-                //    }
-
-                //    for (int c = 0; c < X_LIST.Count; c++)
-                //    {
-                //        if (this.Voxels[X, Y, Z].IsPointInBox(X_LIST[c].x, X_LIST[c].y, X_LIST[c].z))
-                //        {
-                //            int choice = c;
-                //            for (int s = c + 1; s < X_LIST.Count; s++)
-                //            {
-                //                if (tlist[s] < tlist[choice])
-                //                {
-                //                    choice = s;
-                //                }
-                //            }
-                //            Ret_Event = new X_Event(X_LIST[choice], ulist[choice], vlist[choice], tlist[choice] + t_start, pidlist[choice]);
-                //            return true;
-                //        }
-                //    }
-
-                Point Xpt = null;
-                double umin = 0, vmin = 0, tmin = double.MaxValue;
-                int pid = -1;
-
-                while (true)
-                {
-                    //Check all polygons in the current voxel...
-                    foreach (int i in Voxel_Inv[X, Y, Z, top_index])
-                    {
-                        if (Poly_Ray_ID[top_index, rayid][i] != R.Ray_ID)
-                        {
-                            Poly_Ray_ID[top_index, rayid][i] = R.Ray_ID;
-                            double x, y, z, t;
-                            if (Model[top_index].intersect(i, ref R, out x, out y, out z, out t) && t > 0.0000000001)
-                            {
-                                if (t < tmin)
-                                {
-                                    Xpt = new Point(x, y, z);
-                                    umin = 0;
-                                    vmin = 0;
-                                    tmin = t;
-                                    pid = i;
-                                }
-                            }
-                        }
-                    }
-
-                    if (Xpt != null && this.Voxels[X, Y, Z].IsPointInBox(Xpt.x, Xpt.y, Xpt.z))
-                    {
-                        Ret_Event = new X_Event(Xpt, umin, vmin, tmin + t_start, pid);
-                        return true;
-                    }
-
-                    //Find the Next Voxel...                    
-                    /////////////////////////////////////////////////
-                    if (tMaxX < tMaxY)
-                    {
-                        if (tMaxX < tMaxZ)
-                        {
-                            X += stepX;
-                            if (X < 0 || X >= VoxelCtX)
-                            {
-                                Ret_Event = new X_Event();
-                                return false; /* outside grid */
-                            }
-                            tMaxX = tMaxX + tDeltaX;
-                        }
-                        else
-                        {
-                            Z += stepZ;
-
-                            if (Z < 0 || Z >= VoxelCtZ)
-                            {
-                                Ret_Event = new X_Event();
-                                return false; /* outside grid */
-                            }
-                            tMaxZ = tMaxZ + tDeltaZ;
-                        }
-                    }
-                    else
-                    {
-                        if (tMaxY < tMaxZ)
-                        {
-                            Y += stepY;
-                            if (Y < 0 || Y >= VoxelCtY)
-                            {
-                                Ret_Event = new X_Event();
-                                return false; /* outside grid */
-                            }
-                            tMaxY = tMaxY + tDeltaY;
-                        }
-                        else
-                        {
-                            Z += stepZ;
-                            if (Z < 0 || Z >= VoxelCtZ)
-                            {
-                                Ret_Event = new X_Event();
-                                return false; /* outside grid */
-                            }
-                            tMaxZ = tMaxZ + tDeltaZ;
-                        }
-                    }
-                }
+                return Shoot(R, top_index, out Ret_Event, -1);
             }
+            //    uint rayid = assign_id();
+
+            //    int X, Y, Z;
+            //    //Identify which voxel the Origin point is located in...
+            //    X = (int)Math.Floor((R.x - OBox.Min.x) / VoxelDims.x);
+            //    Y = (int)Math.Floor((R.y - OBox.Min.y) / VoxelDims.y);
+            //    Z = (int)Math.Floor((R.z - OBox.Min.z) / VoxelDims.z);
+
+            //    double tDeltaX, tDeltaY, tDeltaZ;
+            //    double tMaxX = 0, tMaxY = 0, tMaxZ = 0;
+
+            //    int stepX, stepY, stepZ, OutX, OutY, OutZ;
+            //    double t_start = 0;
+
+            //    if (X < 0 || X >= VoxelCtX || Y < 0 || Y >= VoxelCtY || Z < 0 || Z >= VoxelCtZ) //return false;
+            //    {
+            //        if (!OBox.Intersect(ref R, ref t_start))
+            //        {
+            //            Ret_Event = new X_Event();
+            //            return false;
+            //        }
+            //        X = (int)Math.Floor((R.x - OBox.Min.x + R.dx * 1E-6) / VoxelDims.x);
+            //        Y = (int)Math.Floor((R.y - OBox.Min.y + R.dy * 1E-6) / VoxelDims.y);
+            //        Z = (int)Math.Floor((R.z - OBox.Min.z + R.dz * 1E-6) / VoxelDims.z);
+            //    }
+
+            //    if (R.dx < 0)
+            //    {
+            //        OutX = -1;
+            //        stepX = -1;
+            //        tMaxX = (Voxels[X, Y, Z].Min.x - R.x) / R.dx;
+            //        tDeltaX = VoxelDims.x / R.dx * stepX;
+            //    }
+            //    else
+            //    {
+            //        OutX = VoxelCtX;
+            //        stepX = 1;
+            //        tMaxX = (Voxels[X, Y, Z].Max.x - R.x) / R.dx;
+            //        tDeltaX = VoxelDims.x / R.dx * stepX;
+            //    }
+
+            //    if (R.dy < 0)
+            //    {
+            //        OutY = -1;
+            //        stepY = -1;
+            //        tMaxY = (Voxels[X, Y, Z].Min.y - R.y) / R.dy;
+            //        tDeltaY = VoxelDims.y / R.dy * stepY;
+            //    }
+            //    else
+            //    {
+            //        OutY = VoxelCtY;
+            //        stepY = 1;
+            //        tMaxY = (Voxels[X, Y, Z].Max.y - R.y) / R.dy;
+            //        tDeltaY = VoxelDims.y / R.dy * stepY;
+            //    }
+
+            //    if (R.dz < 0)
+            //    {
+            //        OutZ = -1;
+            //        stepZ = -1;
+            //        tMaxZ = (Voxels[X, Y, Z].Min.z - R.z) / R.dz;
+            //        tDeltaZ = VoxelDims.z / R.dz * stepZ;
+            //    }
+            //    else
+            //    {
+            //        OutZ = VoxelCtZ;
+            //        stepZ = 1;
+            //        tMaxZ = (Voxels[X, Y, Z].Max.z - R.z) / R.dz;
+            //        tDeltaZ = VoxelDims.z / R.dz * stepZ;
+            //    }
+
+            //    List<Point> X_LIST = new List<Point>();
+            //    List<double> ulist = new List<double>();
+            //    List<double> vlist = new List<double>();
+            //    List<double> tlist = new List<double>();
+            //    List<int> pidlist = new List<int>();
+
+            //    while (true)
+            //    {
+            //        //Check all polygons in the current voxel...
+            //        foreach (int i in Voxel_Inv[X, Y, Z, top_index])
+            //        {
+            //            if (Poly_Ray_ID[top_index, rayid][i] != R.Ray_ID)
+            //            {
+            //                Poly_Ray_ID[top_index, rayid][i] = R.Ray_ID;
+            //                Point Pt; double u = 0, v = 0, t = 0;
+            //                if (Model[top_index].intersect(i, R, out Pt, out u, out v, out t) && t > 0.0000000001)
+            //                {
+            //                    X_LIST.Add(Pt);
+            //                    ulist.Add(u);
+            //                    vlist.Add(v);
+            //                    tlist.Add(t);
+            //                    pidlist.Add(i);
+            //                }
+            //            }
+            //        }
+
+            //        for (int c = 0; c < X_LIST.Count; c++)
+            //        {
+            //            if (this.Voxels[X, Y, Z].IsPointInBox(X_LIST[c].x, X_LIST[c].y, X_LIST[c].z))
+            //            {
+            //                int choice = c;
+            //                for (int s = c + 1; s < X_LIST.Count; s++)
+            //                {
+            //                    if (tlist[s] < tlist[choice])
+            //                    {
+            //                        choice = s;
+            //                    }
+            //                }
+            //                Ret_Event = new X_Event(X_LIST[choice], ulist[choice], vlist[choice], tlist[choice] + t_start, pidlist[choice]);
+            //                return true;
+            //            }
+            //        }
+
+            //        //Find the Next Voxel...                    
+            //        /////////////////////////////////////////////////
+            //        if (tMaxX < tMaxY)
+            //        {
+            //            if (tMaxX < tMaxZ)
+            //            {
+            //                X += stepX;
+            //                if (X < 0 || X >= VoxelCtX)
+            //                {
+            //                    Ret_Event = new X_Event();
+            //                    return false; /* outside grid */
+            //                }
+            //                tMaxX = tMaxX + tDeltaX;
+            //            }
+            //            else
+            //            {
+            //                Z += stepZ;
+
+            //                if (Z < 0 || Z >= VoxelCtZ)
+            //                {
+            //                    Ret_Event = new X_Event();
+            //                    return false; /* outside grid */
+            //                }
+            //                tMaxZ = tMaxZ + tDeltaZ;
+            //            }
+            //        }
+            //        else
+            //        {
+            //            if (tMaxY < tMaxZ)
+            //            {
+            //                Y += stepY;
+            //                if (Y < 0 || Y >= VoxelCtY)
+            //                {
+            //                    Ret_Event = new X_Event();
+            //                    return false; /* outside grid */
+            //                }
+            //                tMaxY = tMaxY + tDeltaY;
+            //            }
+            //            else
+            //            {
+            //                Z += stepZ;
+            //                if (Z < 0 || Z >= VoxelCtZ)
+            //                {
+            //                    Ret_Event = new X_Event();
+            //                    return false; /* outside grid */
+            //                }
+            //                tMaxZ = tMaxZ + tDeltaZ;
+            //            }
+            //        }
+            //    }
+            //}
 
             public double Xdim
             {

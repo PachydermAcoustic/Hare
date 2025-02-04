@@ -1,6 +1,6 @@
 //'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
-//'Copyright (c) 2008 - 2024, Arthur van der Harten			
+//'Copyright (c) 2008 - 2025, Arthur van der Harten			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or
@@ -66,6 +66,10 @@ namespace Hare
             public static Vector Cross(double ax, double ay, double az, double bx, double by, double bz)
             {
                 return new Vector(ay * bz - az * by, -(ax * bz - az * bx), ax * by - ay * bx);
+            }
+            public static void Cross(double ax, double ay, double az, double bx, double by, double bz, out double dx, out double dy, out double dz)
+            {
+                dx = ay * bz - az * by; dy = -(ax * bz - az * bx); dz = ax * by - ay * bx;
             }
 
 
