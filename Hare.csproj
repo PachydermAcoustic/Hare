@@ -45,7 +45,7 @@
     <Description>Multi-Resolution Raytracing</Description>
     <Company>NA</Company>
     <Product>Hare</Product>
-    <Copyright>Copyright © Arthur van der Harten, 2008-2023</Copyright>
+    <Copyright>Copyright © Open Research in Acoustical Science and Education, Inc. - a 501(c)3 nonprofit, 2008-2023</Copyright>
     <AssemblyVersion>0.0.0.5</AssemblyVersion>
     <FileVersion>0.0.0.5</FileVersion>
   </PropertyGroup>

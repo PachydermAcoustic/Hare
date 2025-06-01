@@ -1,6 +1,6 @@
-//'Hare: Accelerated Multi-Resolution Ray Tracing (GPL) by Arthur van der Harten
+//'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)  
 //'
-//'Copyright (c) 2008, 2025, Arthur van der Harten			
+//'Copyright (c) 2008, 2025, Open Research in Acoustical Science and Education, Inc. - a 501(c)3 nonprofit			
 //'This program is free software; you can redistribute it and/or modify
 //'it under the terms of the GNU General Public License as published 
 //'by the Free Software Foundation; either version 3 of the License, or
