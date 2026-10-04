@@ -389,28 +389,24 @@ namespace Hare
                         return new Ray(Min_PT, new Vector(Min.x, Max.y, Min.z) - Min_PT, 0, 0);
                     case 2:
                         return new Ray(Min_PT, new Vector(Min.x, Min.y, Max.z) - Min_PT, 0, 0);
-                    
                     case 3:
                         pt = new Point(Min_PT.x, Min_PT.y, Max_PT.z);
                         return new Ray(pt, new Vector(Max.x, Min.y, Max.z) - pt, 0, 0);                    
                     case 4:
                         pt = new Point(Min_PT.x, Min_PT.y, Max_PT.z);
                         return new Ray(pt, new Vector(Min.x, Max.y, Max.z) - pt, 0, 0);
-                    
                     case 5:
                         pt = new Point(Max_PT.x, Min_PT.y, Min_PT.z);
                         return new Ray(pt, new Vector(Max.x, Max.y, Min.z) - pt, 0, 0);
                     case 6:
                         pt = new Point(Max_PT.x, Min_PT.y, Min_PT.z);
                         return new Ray(pt, new Vector(Max.x, Min.y, Max.z) - pt, 0, 0);
-                    
                     case 7:
                         pt = new Point(Min_PT.x, Max_PT.y, Min_PT.z);
                         return new Ray(pt, new Vector(Max.x, Max.y, Min.z) - pt, 0, 0);
                     case 8:
                         pt = new Point(Min_PT.x, Max_PT.y, Min_PT.z);
                         return new Ray(pt, new Vector(Min.x, Max.y, Max.z) - pt, 0, 0);
-
                     case 9:
                         return new Ray(Max_PT, new Vector(Max_PT.x - Max.x, Max_PT.y - Min.y, Max_PT.z - Max.z), 0, 0);
                     case 10:
