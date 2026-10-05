@@ -463,7 +463,7 @@ namespace Hare
             {
                 double u, v, t;
                 Point P;
-                Polys[Poly_ID].Intersect(R, this.Polygon_Vertices(Poly_ID), out P, out u, out v, out t, out Poly_ID);
+                Polys[Poly_ID].Intersect(R, Polys[Poly_ID].Points, out P, out u, out v, out t, out Poly_ID);
 
                 X = new X_Event(P, u, v, t, Poly_ID);
                 return true;
@@ -478,7 +478,7 @@ namespace Hare
             /// <returns>true if ray intersects, false if not.</returns>
             public bool intersect(int Poly_ID, Ray R, out Point P, out double u, out double v, out double t)
             {
-                return Polys[Poly_ID].Intersect(R, this.Polygon_Vertices(Poly_ID), out P, out u, out v, out t, out Poly_ID);
+                return Polys[Poly_ID].Intersect(R, Polys[Poly_ID].Points, out P, out u, out v, out t, out Poly_ID);
             }
 
             /// <summary>

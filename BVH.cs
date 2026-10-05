@@ -18,13 +18,13 @@ using System;
 namespace Hare.Geometry
 {
     /// <summary>Immutable spatial index; rebuild after changing topology geometry.</summary>
-    public class KDTree : Spatial_Partition
+    public class BVH : Spatial_Partition
     {
         private readonly PartitionTree tree;
-        public KDTree(Topology[] Model_In, int maxDepth, int maxPolygonsPerNode)
+        public BVH(Topology[] Model_In, int maxDepth, int maxPolygonsPerNode)
         {
             Model = Model_In;
-            tree = new PartitionTree(Model_In, maxDepth, maxPolygonsPerNode, PartitionTreeKind.KD);
+            tree = new PartitionTree(Model_In, maxDepth, maxPolygonsPerNode, PartitionTreeKind.BVH);
         }
         public override bool Shoot(Ray ray, int top_index, out X_Event Ret_Event)
             => tree.Shoot(ray, top_index, out Ret_Event, -1, -1);

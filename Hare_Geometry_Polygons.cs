@@ -371,7 +371,7 @@ namespace Hare
             }
 
             /// <summary>
-            /// Ray-Triangle intersection algorithm, based on the algorithm published by Tomas Akenine-Möller, May 2000
+            /// Ray-Triangle intersection algorithm, based on the algorithm published by Tomas Akenine-Mï¿½ller, May 2000
             /// </summary>
             /// <param name="orig">Ray origin point</param>
             /// <param name="dir">Ray direction vector</param>
@@ -384,58 +384,39 @@ namespace Hare
             /// <returns>True if an intersection was found, false if not.</returns>
             protected bool RayXtri(Ray R, Point vert0, Point vert1, Point vert2, ref double t, ref double u, ref double v)
             {
-
-                /* find vectors for two edges sharing vert0 */
-                Vector edge1 = vert1 - vert0;
-                Vector edge2 = vert2 - vert0;
-
-                /* begin calculating determinant - also used to calculate U parameter */
-                Vector pvec = Hare_math.Cross(R.dx, R.dy, R.dz, edge2.dx, edge2.dy, edge2.dz);
-
-                /* if determinant is near zero, ray lies in plane of triangle */
-                double det = Hare_math.Dot(edge1, pvec);
-
-                /* calculate distance from vert0 to ray origin */
-                double tvecx = R.x - vert0.x;
-                double tvecy = R.y - vert0.y;
-                double tvecz = R.z - vert0.z;
+                // Same determinant and boundary rules as the original kernel, without temporary Vectors.
+                double e1x = vert1.x - vert0.x, e1y = vert1.y - vert0.y, e1z = vert1.z - vert0.z;
+                double e2x = vert2.x - vert0.x, e2y = vert2.y - vert0.y, e2z = vert2.z - vert0.z;
+                double px = R.dy * e2z - R.dz * e2y;
+                double py = R.dz * e2x - R.dx * e2z;
+                double pz = R.dx * e2y - R.dy * e2x;
+                double det = Hare_math.Dot(e1x, e1y, e1z, px, py, pz);
+                double tx = R.x - vert0.x, ty = R.y - vert0.y, tz = R.z - vert0.z;
                 double invdet = 1.0 / det;
-
-                Vector qvec = Hare_math.Cross(tvecx, tvecy, tvecz, edge1.dx, edge1.dy, edge1.dz);
-
+                double qx = ty * e1z - tz * e1y;
+                double qy = tz * e1x - tx * e1z;
+                double qz = tx * e1y - ty * e1x;
                 if (det > 0.000001)
                 {
-                    u = Hare_math.Dot(tvecx, tvecy, tvecz, pvec.dx, pvec.dy, pvec.dz);
-                    if (u < 0.0 || u > det)
-                        return false;
-
-                    /* calculate V parameter and test bounds */
-                    v = Hare_math.Dot(R.dx, R.dy, R.dz, qvec.dx, qvec.dy, qvec.dz);
-                    if (v < 0.0 || u + v > det)
-                        return false;
+                    u = Hare_math.Dot(tx, ty, tz, px, py, pz);
+                    if (u < 0 || u > det) return false;
+                    v = Hare_math.Dot(R.dx, R.dy, R.dz, qx, qy, qz);
+                    if (v < 0 || u + v > det) return false;
                 }
                 else if (det < -0.000001)
                 {
-                    /* calculate U parameter and test bounds */
-                    u = Hare_math.Dot(tvecx, tvecy, tvecz, pvec.dx, pvec.dy, pvec.dz);
-                    if (u > 0.0 || u < det)
-                        return false;
-                    /* calculate V parameter and test bounds */
-                    v = Hare_math.Dot(R.dx, R.dy, R.dz, qvec.dx, qvec.dy, qvec.dz);
-                    if (v > 0.0 || u + v < det)
-                        return false;
+                    u = Hare_math.Dot(tx, ty, tz, px, py, pz);
+                    if (u > 0 || u < det) return false;
+                    v = Hare_math.Dot(R.dx, R.dy, R.dz, qx, qy, qz);
+                    if (v > 0 || u + v < det) return false;
                 }
-                else return false;  /* ray is parallell to the plane of the triangle */
-
-                t = Hare_math.Dot(edge2, qvec) * invdet;
-                u *= invdet;
-                v *= invdet;
-
+                else return false;
+                t = Hare_math.Dot(e2x, e2y, e2z, qx, qy, qz) * invdet;
+                u *= invdet; v *= invdet;
                 return true;
             }
-
             /// <summary>
-            /// High Performance - Ray-Triangle intersection algorithm, based on the algorithm published by Tomas Akenine-Möller, May 2000
+            /// High Performance - Ray-Triangle intersection algorithm, based on the algorithm published by Tomas Akenine-Mï¿½ller, May 2000
             /// </summary>
             /// <param name="orig">Ray origin point</param>
             /// <param name="dir">Ray direction vector</param>
@@ -510,7 +491,7 @@ namespace Hare
             }
 
             /// <summary>
-            /// Ray-Triangle intersection algorithm, based on the algorithm published by Tomas Akenine-Möller, May 2000
+            /// Ray-Triangle intersection algorithm, based on the algorithm published by Tomas Akenine-Mï¿½ller, May 2000
             /// </summary>
             /// <param name="orig">Ray origin point</param>
             /// <param name="dir">Ray direction vector</param>

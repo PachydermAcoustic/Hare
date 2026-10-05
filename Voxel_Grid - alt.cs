@@ -1,4 +1,4 @@
-﻿//'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
+//'Hare: Accelerated Multi-Resolution Ray Tracing (GPL)
 //'
 //'Copyright (c) 2008 - 2025, Open Research in Acoustical Science and Education, Inc. - a 501(c)3 nonprofit			
 //'This program is free software; you can redistribute it and/or modify
@@ -104,21 +104,7 @@ namespace Hare
                         T_List[P_I].Start();
                     }
 
-                    bool finished = false;
-
-                    do
-                    {
-                        System.Threading.Thread.Sleep(100);
-                        finished = true;
-                        for (int t = 0; t < T_List.Length; t++)
-                        {
-                            if (T_List[t].ThreadState == System.Threading.ThreadState.Running)
-                            {
-                                finished = false;
-                                break;
-                            }
-                        }
-                    } while (!finished);
+                    foreach (System.Threading.Thread worker in T_List) worker.Join();
                 }
             }
 
@@ -263,21 +249,7 @@ namespace Hare
                             T_List[P_I].Start(T_);
                         }
                         
-                        bool finished = false;
-
-                        do
-                        {
-                            System.Threading.Thread.Sleep(100);
-                            finished = true;
-                            for (int t = 0; t < T_List.Length; t++)
-                            {
-                                if (T_List[t].ThreadState == System.Threading.ThreadState.Running)
-                                {
-                                    finished = false;
-                                    break;
-                                }
-                            }
-                        } while (!finished);
+                        foreach (System.Threading.Thread worker in T_List) worker.Join();
                     }
                     //////////////////////
                     Xpos_step = temp_Xpstep;

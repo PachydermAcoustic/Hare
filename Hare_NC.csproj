@@ -6,4 +6,5 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+<ItemGroup><Compile Remove="Tests\**\*.cs" /></ItemGroup>
 </Project>
